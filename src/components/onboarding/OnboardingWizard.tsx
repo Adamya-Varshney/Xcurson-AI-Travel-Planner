@@ -2,8 +2,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, LogOut } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import StepWhoYouAre from "./steps/StepWhoYouAre";
 import StepWhereYouLive from "./steps/StepWhereYouLive";
@@ -28,18 +29,19 @@ export interface OnboardingData {
 }
 
 const STEPS = [
-  { title: "Who you are", subtitle: "Let's get to know you" },
-  { title: "Where you live", subtitle: "Your home base" },
-  { title: "How you travel", subtitle: "Your travel style" },
-  { title: "What you eat", subtitle: "Dietary preferences" },
-  { title: "What you love", subtitle: "Interests & passions" },
-  { title: "Past trips", subtitle: "Where you've been" },
+  { title: "Who you are", subtitle: "Let's get to know you", icon: "👋" },
+  { title: "Where you live", subtitle: "Your home base", icon: "📍" },
+  { title: "How you travel", subtitle: "Your travel style", icon: "✈️" },
+  { title: "What you eat", subtitle: "Dietary preferences", icon: "🍜" },
+  { title: "What you love", subtitle: "Interests & passions", icon: "❤️" },
+  { title: "Past trips", subtitle: "Where you've been", icon: "🗺️" },
 ];
 
 const OnboardingWizard = () => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const { updateProfile } = useProfile();
+  const { signOut } = useAuth();
 
   const [data, setData] = useState<OnboardingData>({
     fullName: "",
@@ -93,7 +95,6 @@ const OnboardingWizard = () => {
         onboarding_completed: true,
       });
 
-      // Fire-and-forget AI analysis
       supabase.functions.invoke("analyze-profile", {
         body: { onboardingData: data },
       }).catch(console.error);
@@ -104,6 +105,10 @@ const OnboardingWizard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
   };
 
   const canProceed = () => {
@@ -129,48 +134,98 @@ const OnboardingWizard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className="px-6 pt-6">
-        <div className="flex gap-1.5 mb-2">
+      {/* Header with progress and logout */}
+      <div className="px-6 pt-5 pb-2">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{STEPS[step].icon}</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              Step {step + 1} of {STEPS.length}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="text-muted-foreground hover:text-destructive gap-1.5 text-xs"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Sign out
+          </Button>
+        </div>
+        <div className="flex gap-1.5">
           {STEPS.map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= step ? "gradient-primary" : "bg-muted"}`}
+              className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                i < step
+                  ? "gradient-primary"
+                  : i === step
+                  ? "gradient-primary animate-pulse"
+                  : "bg-muted"
+              }`}
             />
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">Step {step + 1} of {STEPS.length}</p>
       </div>
 
-      <div className="flex-1 px-6 py-8 max-w-lg mx-auto w-full">
+      {/* Step content */}
+      <div className="flex-1 px-6 py-6 max-w-lg mx-auto w-full overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
           >
-            <h2 className="text-2xl font-display font-bold text-foreground mb-1">{STEPS[step].title}</h2>
-            <p className="text-muted-foreground mb-8">{STEPS[step].subtitle}</p>
+            <h2 className="text-2xl font-display font-bold text-foreground mb-1">
+              {STEPS[step].title}
+            </h2>
+            <p className="text-muted-foreground mb-6">{STEPS[step].subtitle}</p>
             {renderStep()}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="px-6 pb-8 max-w-lg mx-auto w-full flex gap-3">
-        {step > 0 && (
-          <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
-          </Button>
-        )}
-        {step < STEPS.length - 1 ? (
-          <Button onClick={() => setStep(step + 1)} disabled={!canProceed()} className="flex-1 gradient-primary border-0">
-            Continue <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-        ) : (
-          <Button onClick={handleComplete} disabled={loading} className="flex-1 gradient-primary border-0">
-            {loading ? "Setting up..." : "Complete"} <Sparkles className="w-4 h-4 ml-2" />
-          </Button>
+      {/* Navigation */}
+      <div className="px-6 pb-6 pt-2 max-w-lg mx-auto w-full">
+        <div className="flex gap-3">
+          {step > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setStep(step - 1)}
+              className="flex-1 h-12"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </Button>
+          )}
+          {step < STEPS.length - 1 ? (
+            <Button
+              onClick={() => setStep(step + 1)}
+              disabled={!canProceed()}
+              className="flex-1 h-12 gradient-primary border-0 text-primary-foreground shadow-lg hover:shadow-xl transition-shadow"
+            >
+              Continue <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleComplete}
+              disabled={loading}
+              className="flex-1 h-12 gradient-primary border-0 text-primary-foreground shadow-lg hover:shadow-xl transition-shadow"
+            >
+              {loading ? "Setting up..." : "Complete"}{" "}
+              <Sparkles className="w-4 h-4 ml-2" />
+            </Button>
+          )}
+        </div>
+        {step < STEPS.length - 1 && (
+          <button
+            onClick={() => setStep(step + 1)}
+            className="w-full text-center text-xs text-muted-foreground mt-3 hover:text-foreground transition-colors"
+          >
+            Skip for now
+          </button>
         )}
       </div>
     </div>
