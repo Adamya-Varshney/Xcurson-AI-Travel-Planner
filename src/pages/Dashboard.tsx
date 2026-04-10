@@ -65,7 +65,20 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <Link to="/discover">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow gradient-primary">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
+                  <Compass className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <div className="font-medium text-primary-foreground">Discover</div>
+                  <div className="text-xs text-primary-foreground/70">Find destinations</div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
           <Link to="/trips">
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-5 flex items-center gap-4">
@@ -80,14 +93,14 @@ const Dashboard = () => {
             </Card>
           </Link>
           <Link to="/trips">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow gradient-primary">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-primary-foreground" />
+                <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-foreground" />
                 </div>
                 <div>
-                  <div className="font-medium text-primary-foreground">New Trip</div>
-                  <div className="text-xs text-primary-foreground/70">Start planning</div>
+                  <div className="font-medium text-foreground">New Trip</div>
+                  <div className="text-xs text-muted-foreground">Start planning</div>
                 </div>
               </CardContent>
             </Card>
