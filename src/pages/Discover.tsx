@@ -170,6 +170,11 @@ const Discover = () => {
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
+              <Link to="/">
+                <Button variant="ghost" size="icon" className="w-8 h-8">
+                  <Home className="w-4 h-4" />
+                </Button>
+              </Link>
               <Compass className="w-5 h-5 text-primary" />
               <h1 className="font-display font-bold text-lg text-foreground">Discover</h1>
             </div>
