@@ -277,6 +277,36 @@ export type Database = {
         }
         Relationships: []
       }
+      vibe_searches: {
+        Row: {
+          created_at: string
+          extracted_vibe: Json | null
+          id: string
+          image_url_temp: string | null
+          match_explanation: string | null
+          matched_destinations: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_vibe?: Json | null
+          id?: string
+          image_url_temp?: string | null
+          match_explanation?: string | null
+          matched_destinations?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted_vibe?: Json | null
+          id?: string
+          image_url_temp?: string | null
+          match_explanation?: string | null
+          matched_destinations?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
