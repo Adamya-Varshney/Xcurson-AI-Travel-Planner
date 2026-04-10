@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -11,8 +11,8 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -23,32 +23,31 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const userId = claimsData.claims.sub;
     const { onboardingData } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const prompt = `Analyze this traveler's onboarding data and infer their experience level.
+    const prompt = `Analyze this traveler's onboarding data and determine their experience level.
 
 Onboarding Data:
 ${JSON.stringify(onboardingData, null, 2)}
 
-Based on the data:
-- past destinations count and variety
-- travel frequency
-- travel style preferences
-- budget range
+Based on past destinations count/variety, travel frequency, travel style, and budget range, determine:
+- "first_timer" (0-2 trips, new to travel)
+- "building" (3-9 trips, growing confidence)
+- "experienced" (10+ trips or diverse/complex travel patterns)
 
-Determine the experience_level: "first_timer" (0-2 trips, new to travel), "building" (3-9 trips, growing), or "experienced" (10+ trips or diverse/complex travel patterns).
-
-Return ONLY the experience level as a single word: first_timer, building, or experienced.`;
+Return ONLY one of: first_timer, building, experienced`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -65,25 +64,21 @@ Return ONLY the experience level as a single word: first_timer, building, or exp
       }),
     });
 
-    if (!aiResponse.ok) {
-      console.error("AI gateway error:", aiResponse.status);
-      // Fall back to rule-based
-      const tripCount = onboardingData.pastDestinations?.length || 0;
-      let level = "first_timer";
-      if (tripCount >= 10) level = "experienced";
-      else if (tripCount >= 3) level = "building";
+    let experienceLevel = "first_timer";
 
-      return new Response(JSON.stringify({ experience_level: level }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (aiResponse.ok) {
+      const aiData = await aiResponse.json();
+      const rawLevel = aiData.choices?.[0]?.message?.content?.trim()?.toLowerCase() || "";
+      const validLevels = ["first_timer", "building", "experienced"];
+      experienceLevel = validLevels.includes(rawLevel) ? rawLevel : "first_timer";
+    } else {
+      // Fallback to rule-based
+      const tripCount = onboardingData.pastDestinations?.length || 0;
+      if (tripCount >= 10) experienceLevel = "experienced";
+      else if (tripCount >= 3) experienceLevel = "building";
     }
 
-    const aiData = await aiResponse.json();
-    const rawLevel = aiData.choices?.[0]?.message?.content?.trim()?.toLowerCase() || "";
-    const validLevels = ["first_timer", "building", "experienced"];
-    const experienceLevel = validLevels.includes(rawLevel) ? rawLevel : "first_timer";
-
-    // Update profile
+    // Update profile with service role
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -92,7 +87,7 @@ Return ONLY the experience level as a single word: first_timer, building, or exp
     await adminClient
       .from("user_profiles")
       .update({ experience_level: experienceLevel })
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     return new Response(JSON.stringify({ experience_level: experienceLevel }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

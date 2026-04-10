@@ -93,7 +93,7 @@ const OnboardingWizard = () => {
         onboarding_completed: true,
       });
 
-      // Fire-and-forget AI analysis to refine experience level
+      // Fire-and-forget AI analysis
       supabase.functions.invoke("analyze-profile", {
         body: { onboardingData: data },
       }).catch(console.error);
@@ -129,22 +129,18 @@ const OnboardingWizard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Progress bar */}
       <div className="px-6 pt-6">
         <div className="flex gap-1.5 mb-2">
           {STEPS.map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                i <= step ? "gradient-primary" : "bg-muted"
-              }`}
+              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= step ? "gradient-primary" : "bg-muted"}`}
             />
           ))}
         </div>
         <p className="text-xs text-muted-foreground">Step {step + 1} of {STEPS.length}</p>
       </div>
 
-      {/* Content */}
       <div className="flex-1 px-6 py-8 max-w-lg mx-auto w-full">
         <AnimatePresence mode="wait">
           <motion.div
@@ -154,16 +150,13 @@ const OnboardingWizard = () => {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <h2 className="text-2xl font-display font-bold text-foreground mb-1">
-              {STEPS[step].title}
-            </h2>
+            <h2 className="text-2xl font-display font-bold text-foreground mb-1">{STEPS[step].title}</h2>
             <p className="text-muted-foreground mb-8">{STEPS[step].subtitle}</p>
             {renderStep()}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Navigation */}
       <div className="px-6 pb-8 max-w-lg mx-auto w-full flex gap-3">
         {step > 0 && (
           <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
@@ -171,19 +164,11 @@ const OnboardingWizard = () => {
           </Button>
         )}
         {step < STEPS.length - 1 ? (
-          <Button
-            onClick={() => setStep(step + 1)}
-            disabled={!canProceed()}
-            className="flex-1 gradient-primary border-0"
-          >
+          <Button onClick={() => setStep(step + 1)} disabled={!canProceed()} className="flex-1 gradient-primary border-0">
             Continue <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         ) : (
-          <Button
-            onClick={handleComplete}
-            disabled={loading}
-            className="flex-1 gradient-primary border-0"
-          >
+          <Button onClick={handleComplete} disabled={loading} className="flex-1 gradient-primary border-0">
             {loading ? "Setting up..." : "Complete"} <Sparkles className="w-4 h-4 ml-2" />
           </Button>
         )}

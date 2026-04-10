@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useTrips } from "@/hooks/useTrips";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,8 +63,7 @@ const Trips = () => {
                   )}
                   {trip.start_date && (
                     <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                      <Calendar className="w-3 h-3" /> {trip.start_date}
-                      {trip.end_date && ` → ${trip.end_date}`}
+                      <Calendar className="w-3 h-3" /> {trip.start_date}{trip.end_date && ` → ${trip.end_date}`}
                     </p>
                   )}
                 </div>
@@ -81,21 +79,15 @@ const Trips = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="px-6 py-4 flex items-center gap-3 border-b border-border">
-        <Link to="/dashboard">
-          <Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button>
-        </Link>
+        <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button></Link>
         <h1 className="text-lg font-display font-bold text-foreground">My Trips</h1>
         <div className="ml-auto">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gradient-primary border-0">
-                <Plus className="w-4 h-4 mr-1" /> New Trip
-              </Button>
+              <Button size="sm" className="gradient-primary border-0"><Plus className="w-4 h-4 mr-1" /> New Trip</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Plan a new trip</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>Plan a new trip</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
                 <Input placeholder="Trip name" value={title} onChange={(e) => setTitle(e.target.value)} />
                 <Input placeholder="Destination (optional)" value={destination} onChange={(e) => setDestination(e.target.value)} />

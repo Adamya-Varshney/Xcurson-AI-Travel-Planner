@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { OnboardingData } from "../OnboardingWizard";
+import type { OnboardingData } from "../OnboardingWizard";
 
 interface Props {
   data: OnboardingData;
