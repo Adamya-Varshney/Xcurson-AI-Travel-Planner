@@ -51,10 +51,9 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
   const handleImageSelected = useCallback(async (file: File) => {
     if (!user) return;
 
-    // Preview
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+    // Create preview synchronously using object URL
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
 
     // Upload to storage
     setState("loading");
