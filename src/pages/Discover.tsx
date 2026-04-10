@@ -9,6 +9,7 @@ import MoodCheckIn from "@/components/discovery/MoodCheckIn";
 import TripModeSwitcher from "@/components/discovery/TripModeSwitcher";
 import DestinationCard from "@/components/discovery/DestinationCard";
 import DestinationDetail from "@/components/discovery/DestinationDetail";
+import DestinationImageCarousel from "@/components/discovery/DestinationImageCarousel";
 
 interface RankedDestination {
   destination_id: string;
