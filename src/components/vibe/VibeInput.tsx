@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface VibeInputProps {
-  onImageSelected: (file: File) => void;
+  onImageSelected: (file: File, previewUrl: string) => void;
   onUrlSubmitted: (url: string) => void;
   disabled?: boolean;
 }
@@ -20,10 +20,10 @@ const VibeInput = ({ onImageSelected, onUrlSubmitted, disabled }: VibeInputProps
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
-    onImageSelected(file);
+
+    const previewUrl = URL.createObjectURL(file);
+    setPreview(previewUrl);
+    onImageSelected(file, previewUrl);
   }, [onImageSelected]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {

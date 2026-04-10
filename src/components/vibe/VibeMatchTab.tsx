@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +23,28 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
     match_explanation: string;
     matched_destinations: any[];
   } | null>(null);
+  const objectPreviewRef = useRef<string | null>(null);
+
+  const updateImagePreview = useCallback((nextPreview: string | null) => {
+    if (objectPreviewRef.current && objectPreviewRef.current !== nextPreview) {
+      URL.revokeObjectURL(objectPreviewRef.current);
+      objectPreviewRef.current = null;
+    }
+
+    if (nextPreview?.startsWith("blob:")) {
+      objectPreviewRef.current = nextPreview;
+    }
+
+    setImagePreview(nextPreview);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (objectPreviewRef.current) {
+        URL.revokeObjectURL(objectPreviewRef.current);
+      }
+    };
+  }, []);
 
   const processVibeMatch = useCallback(async (imageUrl: string) => {
     setState("loading");
@@ -35,7 +57,9 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
       if (data.error) throw new Error(data.error);
 
       setResults(data);
-      if (data.resolved_image_url) setImagePreview(data.resolved_image_url);
+      if (data.resolved_image_url) {
+        updateImagePreview(data.resolved_image_url);
+      }
       setState("results");
     } catch (err: any) {
       console.error("Vibe match error:", err);
@@ -46,31 +70,15 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
       });
       setState("input");
     }
-  }, []);
+  }, [updateImagePreview]);
 
-  const readFileAsDataUrl = useCallback((file: File) => {
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          resolve(reader.result);
-          return;
-        }
-        reject(new Error("Could not preview the selected image."));
-      };
-      reader.onerror = () => reject(new Error("Could not preview the selected image."));
-      reader.readAsDataURL(file);
-    });
-  }, []);
-
-  const handleImageSelected = useCallback(async (file: File) => {
+  const handleImageSelected = useCallback(async (file: File, previewUrl: string) => {
     if (!user) return;
 
-    try {
-      const previewUrl = await readFileAsDataUrl(file);
-      setImagePreview(previewUrl);
-      setState("loading");
+    updateImagePreview(previewUrl);
+    setState("loading");
 
+    try {
       const fileName = `${user.id}/${Date.now()}-${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("vibe-images")
@@ -92,16 +100,16 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
       });
       setState("input");
     }
-  }, [user, processVibeMatch, readFileAsDataUrl]);
+  }, [user, processVibeMatch, updateImagePreview]);
 
   const handleUrlSubmitted = useCallback(async (url: string) => {
-    setImagePreview(url);
+    updateImagePreview(url);
     await processVibeMatch(url);
-  }, [processVibeMatch]);
+  }, [processVibeMatch, updateImagePreview]);
 
   const handleReset = () => {
     setState("input");
-    setImagePreview(null);
+    updateImagePreview(null);
     setResults(null);
   };
 
@@ -138,7 +146,7 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
 
       <VibeHistory
         onRestore={({ imagePreview: img, extractedVibe, matchExplanation, matchedDestinations }) => {
-          setImagePreview(img);
+          updateImagePreview(img);
           setResults({
             extracted_vibe: extractedVibe,
             match_explanation: matchExplanation,
