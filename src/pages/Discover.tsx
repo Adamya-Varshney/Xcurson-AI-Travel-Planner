@@ -38,6 +38,7 @@ const Discover = () => {
   const [loading, setLoading] = useState(false);
   const [selectedDest, setSelectedDest] = useState<RankedDestination | null>(null);
   const [currentMood, setCurrentMood] = useState<{ mood_state: string; energy_level: string; planning_horizon: string } | null>(null);
+  const [destinationImages, setDestinationImages] = useState<Record<string, string[]>>({});
 
   const fetchDiscovery = useCallback(async (mood: { mood_state: string; energy_level: string; planning_horizon: string }, mode: string) => {
     setLoading(true);
