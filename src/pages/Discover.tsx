@@ -9,6 +9,7 @@ import MoodCheckIn from "@/components/discovery/MoodCheckIn";
 import TripModeSwitcher from "@/components/discovery/TripModeSwitcher";
 import DestinationCard from "@/components/discovery/DestinationCard";
 import DestinationDetail from "@/components/discovery/DestinationDetail";
+import DestinationImageCarousel from "@/components/discovery/DestinationImageCarousel";
 
 interface RankedDestination {
   destination_id: string;
@@ -37,6 +38,7 @@ const Discover = () => {
   const [loading, setLoading] = useState(false);
   const [selectedDest, setSelectedDest] = useState<RankedDestination | null>(null);
   const [currentMood, setCurrentMood] = useState<{ mood_state: string; energy_level: string; planning_horizon: string } | null>(null);
+  const [destinationImages, setDestinationImages] = useState<Record<string, string[]>>({});
 
   const fetchDiscovery = useCallback(async (mood: { mood_state: string; energy_level: string; planning_horizon: string }, mode: string) => {
     setLoading(true);
@@ -57,6 +59,25 @@ const Discover = () => {
       setLoading(false);
     }
   }, []);
+
+  // Fetch images when destinations change
+  useEffect(() => {
+    if (destinations.length === 0) return;
+    const fetchImages = async () => {
+      try {
+        const payload = destinations.slice(0, 15).map((d) => ({ name: d.name, country: d.country }));
+        const { data, error } = await supabase.functions.invoke("fetch-destination-images", {
+          body: { destinations: payload },
+        });
+        if (!error && data?.images) {
+          setDestinationImages(data.images);
+        }
+      } catch (err) {
+        console.error("Image fetch error:", err);
+      }
+    };
+    fetchImages();
+  }, [destinations]);
 
   // Check for existing valid mood session on mount
   useEffect(() => {
@@ -181,12 +202,17 @@ const Discover = () => {
         ) : destinations.length > 0 ? (
           <div className="grid gap-4">
             {destinations.map((dest, i) => (
-              <DestinationCard
-                key={dest.destination_id}
-                destination={dest}
-                rank={i}
-                onClick={() => setSelectedDest(dest)}
-              />
+              <div key={dest.destination_id}>
+                <DestinationCard
+                  destination={dest}
+                  rank={i}
+                  onClick={() => setSelectedDest(dest)}
+                />
+                <DestinationImageCarousel
+                  images={destinationImages[dest.name] || []}
+                  destinationName={dest.name}
+                />
+              </div>
             ))}
           </div>
         ) : !showMoodCheckIn ? (
