@@ -81,17 +81,9 @@ const VibeHistory = ({ onRestore }: VibeHistoryProps) => {
                 }
                 className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary/30 transition-all text-left"
               >
-                {s.image_url_temp ? (
-                  <img
-                    src={s.image_url_temp}
-                    alt="Vibe"
-                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 text-xl">
-                    ✨
-                  </div>
-                )}
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-lg">
+                  ✨
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {tags.map((tag, i) => (
