@@ -61,6 +61,7 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
       if (data.resolved_image_url) {
         updateImagePreview(data.resolved_image_url);
       }
+      setHistoryRefreshKey((current) => current + 1);
       setState("results");
     } catch (err: any) {
       console.error("Vibe match error:", err);
@@ -146,6 +147,7 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
       </AnimatePresence>
 
       <VibeHistory
+        refreshKey={historyRefreshKey}
         onRestore={({ imagePreview: img, extractedVibe, matchExplanation, matchedDestinations }) => {
           updateImagePreview(img);
           setResults({

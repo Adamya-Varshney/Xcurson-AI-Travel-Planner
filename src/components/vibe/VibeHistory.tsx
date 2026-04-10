@@ -75,7 +75,7 @@ const VibeHistory = ({ refreshKey = 0, onRestore }: VibeHistoryProps) => {
                 key={s.id}
                 onClick={() =>
                   onRestore({
-                    imagePreview: null,
+                    imagePreview: s.image_url_temp,
                     extractedVibe: s.extracted_vibe,
                     matchExplanation: s.match_explanation || "",
                     matchedDestinations: (s.matched_destinations as any[]) || [],
