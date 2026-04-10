@@ -14,11 +14,10 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
+  const { user } = useAuth();
   const { pathname } = useLocation();
 
-  // Show bottom nav on main app pages
-  const authOnlyRoutes = ["/discover", "/trips", "/profile", "/"];
-  const showNav = authOnlyRoutes.includes(pathname);
+  const showNav = !!user;
 
   return (
     <>
