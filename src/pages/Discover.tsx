@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Compass, LogOut, RefreshCw, Home } from "lucide-react";
+import { Compass, LogOut, RefreshCw, Home, Sparkles, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import TripModeSwitcher from "@/components/discovery/TripModeSwitcher";
 import DestinationCard from "@/components/discovery/DestinationCard";
 import DestinationDetail from "@/components/discovery/DestinationDetail";
 import DestinationImageCarousel from "@/components/discovery/DestinationImageCarousel";
+import VibeMatchTab from "@/components/vibe/VibeMatchTab";
 
 interface RankedDestination {
   destination_id: string;
@@ -31,6 +32,8 @@ interface RankedDestination {
   mood_score?: number;
 }
 
+type DiscoverTab = "mood" | "vibe";
+
 const Discover = () => {
   const { user, signOut } = useAuth();
   const [showMoodCheckIn, setShowMoodCheckIn] = useState(true);
@@ -40,6 +43,7 @@ const Discover = () => {
   const [selectedDest, setSelectedDest] = useState<RankedDestination | null>(null);
   const [currentMood, setCurrentMood] = useState<{ mood_state: string; energy_level: string; planning_horizon: string } | null>(null);
   const [destinationImages, setDestinationImages] = useState<Record<string, string[]>>({});
+  const [activeTab, setActiveTab] = useState<DiscoverTab>("mood");
 
   const fetchDiscovery = useCallback(async (mood: { mood_state: string; energy_level: string; planning_horizon: string }, mode: string) => {
     setLoading(true);
@@ -158,9 +162,9 @@ const Discover = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mood check-in overlay */}
+      {/* Mood check-in overlay (only for mood tab) */}
       <AnimatePresence>
-        {showMoodCheckIn && (
+        {showMoodCheckIn && activeTab === "mood" && (
           <MoodCheckIn onSubmit={handleMoodSubmit} onSkip={handleSkipMood} />
         )}
       </AnimatePresence>
@@ -179,7 +183,7 @@ const Discover = () => {
               <h1 className="font-display font-bold text-lg text-foreground">Discover</h1>
             </div>
             <div className="flex items-center gap-2">
-              {currentMood && (
+              {activeTab === "mood" && currentMood && (
                 <button
                   onClick={() => setShowMoodCheckIn(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-sm font-medium text-foreground hover:bg-muted/80 transition-colors"
@@ -194,38 +198,73 @@ const Discover = () => {
               </Button>
             </div>
           </div>
-          <TripModeSwitcher value={tripMode} onChange={handleTripModeChange} />
+
+          {/* Tab Switcher: Mood vs Vibe */}
+          <div className="flex gap-1 p-1 rounded-xl bg-muted mb-3">
+            <button
+              onClick={() => setActiveTab("mood")}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "mood"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Search className="w-4 h-4" />
+              Mood Match
+            </button>
+            <button
+              onClick={() => setActiveTab("vibe")}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "vibe"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Vibe Match
+            </button>
+          </div>
+
+          {activeTab === "mood" && (
+            <TripModeSwitcher value={tripMode} onChange={handleTripModeChange} />
+          )}
         </div>
       </header>
 
-      {/* Feed */}
+      {/* Main Content */}
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
-        {loading ? (
-          <div className="flex flex-col items-center py-20 gap-4">
-            <div className="w-12 h-12 rounded-2xl gradient-primary animate-pulse" />
-            <p className="text-muted-foreground text-sm">Finding your perfect destinations...</p>
-          </div>
-        ) : destinations.length > 0 ? (
-          <div className="grid gap-4">
-            {destinations.map((dest, i) => (
-              <div key={dest.destination_id}>
-                <DestinationCard
-                  destination={dest}
-                  rank={i}
-                  onClick={() => setSelectedDest(dest)}
-                />
-                <DestinationImageCarousel
-                  images={destinationImages[dest.name] || []}
-                  destinationName={dest.name}
-                />
+        {activeTab === "mood" ? (
+          <>
+            {loading ? (
+              <div className="flex flex-col items-center py-20 gap-4">
+                <div className="w-12 h-12 rounded-2xl gradient-primary animate-pulse" />
+                <p className="text-muted-foreground text-sm">Finding your perfect destinations...</p>
               </div>
-            ))}
-          </div>
-        ) : !showMoodCheckIn ? (
-          <div className="text-center py-20">
-            <p className="text-muted-foreground">No destinations found. Try changing your mood!</p>
-          </div>
-        ) : null}
+            ) : destinations.length > 0 ? (
+              <div className="grid gap-4">
+                {destinations.map((dest, i) => (
+                  <div key={dest.destination_id}>
+                    <DestinationCard
+                      destination={dest}
+                      rank={i}
+                      onClick={() => setSelectedDest(dest)}
+                    />
+                    <DestinationImageCarousel
+                      images={destinationImages[dest.name] || []}
+                      destinationName={dest.name}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : !showMoodCheckIn ? (
+              <div className="text-center py-20">
+                <p className="text-muted-foreground">No destinations found. Try changing your mood!</p>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <VibeMatchTab onDestinationClick={(dest) => setSelectedDest(dest)} />
+        )}
       </main>
 
       {/* Detail overlay */}
