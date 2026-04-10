@@ -73,6 +73,108 @@ export type Database = {
           },
         ]
       }
+      destinations: {
+        Row: {
+          budget_level: string | null
+          country: string
+          cover_image_url: string | null
+          created_at: string | null
+          crowd_level: number | null
+          description: string | null
+          dietary_friendly: string[] | null
+          experience_tags: string[] | null
+          freshness_score: number | null
+          id: string
+          landscape_type: string[] | null
+          mood_affinities: Json | null
+          name: string
+          pace: string | null
+          region: string | null
+          trend_direction: string | null
+          updated_at: string | null
+          visa_status_in: string | null
+        }
+        Insert: {
+          budget_level?: string | null
+          country: string
+          cover_image_url?: string | null
+          created_at?: string | null
+          crowd_level?: number | null
+          description?: string | null
+          dietary_friendly?: string[] | null
+          experience_tags?: string[] | null
+          freshness_score?: number | null
+          id?: string
+          landscape_type?: string[] | null
+          mood_affinities?: Json | null
+          name: string
+          pace?: string | null
+          region?: string | null
+          trend_direction?: string | null
+          updated_at?: string | null
+          visa_status_in?: string | null
+        }
+        Update: {
+          budget_level?: string | null
+          country?: string
+          cover_image_url?: string | null
+          created_at?: string | null
+          crowd_level?: number | null
+          description?: string | null
+          dietary_friendly?: string[] | null
+          experience_tags?: string[] | null
+          freshness_score?: number | null
+          id?: string
+          landscape_type?: string[] | null
+          mood_affinities?: Json | null
+          name?: string
+          pace?: string | null
+          region?: string | null
+          trend_direction?: string | null
+          updated_at?: string | null
+          visa_status_in?: string | null
+        }
+        Relationships: []
+      }
+      mood_sessions: {
+        Row: {
+          created_at: string | null
+          energy_level: string
+          expires_at: string
+          id: string
+          mood_state: string
+          planning_horizon: string
+          ranked_destinations: Json | null
+          trip_mode: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          energy_level?: string
+          expires_at?: string
+          id?: string
+          mood_state?: string
+          planning_horizon?: string
+          ranked_destinations?: Json | null
+          trip_mode?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          energy_level?: string
+          expires_at?: string
+          id?: string
+          mood_state?: string
+          planning_horizon?: string
+          ranked_destinations?: Json | null
+          trip_mode?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           cover_image_url: string | null

@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import Trips from "./pages/Trips";
+import Discover from "./pages/Discover";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/discover" element={<Discover />} />
             <Route path="/trips" element={<Trips />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
