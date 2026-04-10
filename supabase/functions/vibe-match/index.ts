@@ -55,17 +55,55 @@ Deno.serve(async (req) => {
     // ─── STEP 1: Vibe Extraction via Gemini Pro Vision ───
     console.log("Step 1: Extracting vibe from image...");
 
-    // Fetch the image and convert to base64
-    const imageResp = await fetch(image_url);
-    if (!imageResp.ok) {
+    // Fetch the image URL — if it's a webpage, try to extract the OG image
+    let actualImageUrl = image_url;
+    const probeResp = await fetch(image_url, { redirect: "follow" });
+    if (!probeResp.ok) {
       return new Response(
-        JSON.stringify({ error: "Could not fetch image" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: "Could not fetch the provided URL" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const probeContentType = probeResp.headers.get("content-type") || "";
+
+    if (probeContentType.startsWith("text/html")) {
+      // It's a webpage — try to extract og:image
+      const html = await probeResp.text();
+      const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+      if (ogMatch && ogMatch[1]) {
+        actualImageUrl = ogMatch[1];
+        console.log("Extracted OG image URL:", actualImageUrl);
+      } else {
+        return new Response(
+          JSON.stringify({ error: "That URL is a webpage, not an image. Please paste a direct image URL (ending in .jpg, .png, etc.) or upload a file instead." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      // It was already an image, but we consumed the body in probeResp — we'll re-fetch below
+    }
+
+    // Now fetch the actual image
+    const imageResp = probeContentType.startsWith("text/html")
+      ? await fetch(actualImageUrl)
+      : probeResp;
+
+    if (probeContentType.startsWith("text/html") && !imageResp.ok) {
+      return new Response(
+        JSON.stringify({ error: "Could not fetch the image from the page" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const finalContentType = imageResp.headers.get("content-type") || "image/jpeg";
+    if (!finalContentType.startsWith("image/")) {
+      return new Response(
+        JSON.stringify({ error: "The URL does not point to an image. Please use a direct image URL or upload a file." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const imageBuffer = await imageResp.arrayBuffer();
     const bytes = new Uint8Array(imageBuffer);
     const CHUNK = 8192;
@@ -75,7 +113,7 @@ Deno.serve(async (req) => {
       binary += String.fromCharCode.apply(null, Array.from(chunk));
     }
     const base64Image = btoa(binary);
-    const contentType = imageResp.headers.get("content-type") || "image/jpeg";
+    const contentType = finalContentType;
 
     const vibeExtractionResponse = await fetch(AI_GATEWAY, {
       method: "POST",
