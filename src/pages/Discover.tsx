@@ -60,6 +60,25 @@ const Discover = () => {
     }
   }, []);
 
+  // Fetch images when destinations change
+  useEffect(() => {
+    if (destinations.length === 0) return;
+    const fetchImages = async () => {
+      try {
+        const payload = destinations.slice(0, 15).map((d) => ({ name: d.name, country: d.country }));
+        const { data, error } = await supabase.functions.invoke("fetch-destination-images", {
+          body: { destinations: payload },
+        });
+        if (!error && data?.images) {
+          setDestinationImages(data.images);
+        }
+      } catch (err) {
+        console.error("Image fetch error:", err);
+      }
+    };
+    fetchImages();
+  }, [destinations]);
+
   // Check for existing valid mood session on mount
   useEffect(() => {
     const checkExistingSession = async () => {
