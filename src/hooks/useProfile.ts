@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
 
+type ProfileUpdate = Database["public"]["Tables"]["user_profiles"]["Update"];
+
 export const useProfile = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -23,7 +25,7 @@ export const useProfile = () => {
   });
 
   const updateProfile = useMutation({
-    mutationFn: async (updates: Database["public"]["Tables"]["user_profiles"]["Update"]) => {
+    mutationFn: async (updates: ProfileUpdate) => {
       if (!user?.id) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("user_profiles")
@@ -39,5 +41,9 @@ export const useProfile = () => {
     },
   });
 
-  return { profile: profileQuery.data, isLoading: profileQuery.isLoading, updateProfile };
+  return {
+    profile: profileQuery.data,
+    isLoading: profileQuery.isLoading,
+    updateProfile,
+  };
 };

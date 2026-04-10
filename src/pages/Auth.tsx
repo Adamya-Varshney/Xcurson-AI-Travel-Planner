@@ -43,11 +43,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4">
             <Compass className="w-8 h-8 text-primary-foreground" />
@@ -62,39 +58,17 @@ const Auth = () => {
               {isSignUp && (
                 <div className="relative">
                   <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
+                  <Input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} className="pl-10" required />
                 </div>
               )}
               <div className="relative">
                 <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
+                <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10" required />
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                  minLength={6}
-                  required
-                />
+                <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" minLength={6} required />
               </div>
-
               <Button type="submit" className="w-full gradient-primary border-0" disabled={loading}>
                 {loading ? "Loading..." : isSignUp ? "Create account" : "Sign in"}
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -102,10 +76,7 @@ const Auth = () => {
             </form>
 
             <div className="mt-6 text-center">
-              <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
+              <button onClick={() => setIsSignUp(!isSignUp)} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
               </button>
             </div>

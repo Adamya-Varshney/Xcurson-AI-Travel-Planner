@@ -2,6 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+interface CreateTripInput {
+  title: string;
+  destination?: string;
+  trip_mode?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
 export const useTrips = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -22,7 +30,7 @@ export const useTrips = () => {
   });
 
   const createTrip = useMutation({
-    mutationFn: async (trip: { title: string; destination?: string; trip_mode?: string; start_date?: string; end_date?: string }) => {
+    mutationFn: async (trip: CreateTripInput) => {
       if (!user?.id) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("trips")
@@ -37,5 +45,9 @@ export const useTrips = () => {
     },
   });
 
-  return { trips: tripsQuery.data ?? [], isLoading: tripsQuery.isLoading, createTrip };
+  return {
+    trips: tripsQuery.data ?? [],
+    isLoading: tripsQuery.isLoading,
+    createTrip,
+  };
 };

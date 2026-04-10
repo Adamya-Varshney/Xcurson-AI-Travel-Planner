@@ -1,5 +1,5 @@
 import ChipSelector from "../ChipSelector";
-import { OnboardingData } from "../OnboardingWizard";
+import type { OnboardingData } from "../OnboardingWizard";
 
 interface Props {
   data: OnboardingData;
@@ -14,29 +14,15 @@ const StepHowYouTravel = ({ data, onChange }: Props) => (
   <div className="space-y-8">
     <div>
       <label className="text-sm font-medium text-foreground mb-3 block">Travel style (pick all that fit)</label>
-      <ChipSelector
-        options={TRAVEL_STYLES}
-        selected={data.travelStyle}
-        onChange={(s) => onChange({ travelStyle: s })}
-      />
+      <ChipSelector options={TRAVEL_STYLES} selected={data.travelStyle} onChange={(s) => onChange({ travelStyle: s })} />
     </div>
     <div>
       <label className="text-sm font-medium text-foreground mb-3 block">Preferred pace</label>
-      <ChipSelector
-        options={PACES}
-        selected={[data.travelPace]}
-        onChange={(s) => onChange({ travelPace: s[0] || "balanced" })}
-        multiple={false}
-      />
+      <ChipSelector options={PACES} selected={[data.travelPace]} onChange={(s) => onChange({ travelPace: s[0] || "balanced" })} multiple={false} />
     </div>
     <div>
       <label className="text-sm font-medium text-foreground mb-3 block">Budget preference</label>
-      <ChipSelector
-        options={BUDGETS}
-        selected={[data.budgetRange]}
-        onChange={(s) => onChange({ budgetRange: s[0] || "mid" })}
-        multiple={false}
-      />
+      <ChipSelector options={BUDGETS} selected={[data.budgetRange]} onChange={(s) => onChange({ budgetRange: s[0] || "mid" })} multiple={false} />
     </div>
   </div>
 );

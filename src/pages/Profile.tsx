@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,6 @@ const INTERESTS = [
   "Nightlife", "Shopping", "Wildlife", "Trekking", "Scuba diving",
   "Photography", "Road trips", "Yoga & meditation", "Festivals",
 ];
-
 const DIETARY = ["Vegetarian", "Vegan", "Non-vegetarian", "Pescatarian", "Jain", "Halal", "Gluten-free", "No restrictions"];
 const CUISINES = ["Indian", "Italian", "Japanese", "Thai", "Mexican", "Mediterranean", "Chinese", "Korean", "Local street food"];
 
@@ -23,7 +21,6 @@ const Profile = () => {
   const { profile, isLoading, updateProfile } = useProfile();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-
   const [fullName, setFullName] = useState("");
   const [homeCity, setHomeCity] = useState("");
   const [homeCountry, setHomeCountry] = useState("");
@@ -67,9 +64,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="px-6 py-4 flex items-center gap-3 border-b border-border">
-        <Link to="/dashboard">
-          <Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button>
-        </Link>
+        <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button></Link>
         <h1 className="text-lg font-display font-bold text-foreground">Profile</h1>
         <div className="ml-auto">
           {editing ? (
@@ -109,9 +104,7 @@ const Profile = () => {
               <ChipSelector options={INTERESTS} selected={interests} onChange={setInterests} />
             ) : (
               <div className="flex flex-wrap gap-2">
-                {((profile?.experience_preferences as any)?.interests || []).map((i: string) => (
-                  <Badge key={i} variant="secondary">{i}</Badge>
-                ))}
+                {((profile?.experience_preferences as any)?.interests || []).map((i: string) => <Badge key={i} variant="secondary">{i}</Badge>)}
                 {!((profile?.experience_preferences as any)?.interests?.length) && <span className="text-muted-foreground text-sm">Not set</span>}
               </div>
             )}
@@ -133,19 +126,11 @@ const Profile = () => {
                 </div>
               </>
             ) : (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {((profile?.food_preferences as any)?.dietary || []).map((d: string) => (
-                    <Badge key={d} variant="secondary">{d}</Badge>
-                  ))}
-                  {((profile?.food_preferences as any)?.cuisines || []).map((c: string) => (
-                    <Badge key={c} variant="outline">{c}</Badge>
-                  ))}
-                  {!((profile?.food_preferences as any)?.dietary?.length) && !((profile?.food_preferences as any)?.cuisines?.length) && (
-                    <span className="text-muted-foreground text-sm">Not set</span>
-                  )}
-                </div>
-              </>
+              <div className="flex flex-wrap gap-2">
+                {((profile?.food_preferences as any)?.dietary || []).map((d: string) => <Badge key={d} variant="secondary">{d}</Badge>)}
+                {((profile?.food_preferences as any)?.cuisines || []).map((c: string) => <Badge key={c} variant="outline">{c}</Badge>)}
+                {!((profile?.food_preferences as any)?.dietary?.length) && !((profile?.food_preferences as any)?.cuisines?.length) && <span className="text-muted-foreground text-sm">Not set</span>}
+              </div>
             )}
           </CardContent>
         </Card>

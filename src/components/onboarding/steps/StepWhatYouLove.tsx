@@ -1,5 +1,5 @@
 import ChipSelector from "../ChipSelector";
-import { OnboardingData } from "../OnboardingWizard";
+import type { OnboardingData } from "../OnboardingWizard";
 
 interface Props {
   data: OnboardingData;
@@ -19,19 +19,11 @@ const StepWhatYouLove = ({ data, onChange }: Props) => (
   <div className="space-y-8">
     <div>
       <label className="text-sm font-medium text-foreground mb-3 block">Interests & activities</label>
-      <ChipSelector
-        options={INTERESTS}
-        selected={data.interests}
-        onChange={(s) => onChange({ interests: s })}
-      />
+      <ChipSelector options={INTERESTS} selected={data.interests} onChange={(s) => onChange({ interests: s })} />
     </div>
     <div>
       <label className="text-sm font-medium text-foreground mb-3 block">Cultural vibe</label>
-      <ChipSelector
-        options={CULTURAL}
-        selected={data.culturalPrefs}
-        onChange={(s) => onChange({ culturalPrefs: s })}
-      />
+      <ChipSelector options={CULTURAL} selected={data.culturalPrefs} onChange={(s) => onChange({ culturalPrefs: s })} />
     </div>
   </div>
 );
