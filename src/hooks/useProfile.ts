@@ -17,11 +17,23 @@ export const useProfile = () => {
         .from("user_profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data;
+      if (data) return data;
+      // Profile missing – create one
+      const { data: newProfile, error: insertError } = await supabase
+        .from("user_profiles")
+        .insert({
+          user_id: user.id,
+          full_name: user.user_metadata?.full_name ?? "",
+        })
+        .select()
+        .single();
+      if (insertError) throw insertError;
+      return newProfile;
     },
     enabled: !!user?.id,
+    retry: 1,
   });
 
   const updateProfile = useMutation({
