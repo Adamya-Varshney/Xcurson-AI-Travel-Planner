@@ -3,6 +3,58 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const UA = "LovableTravelApp/1.0 (https://lovable.dev)";
+
+async function fetchImagesForDestination(name: string): Promise<string[]> {
+  // Step 1: Get image file titles from Wikipedia article
+  const listUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(name)}&prop=images&imlimit=15&format=json`;
+  const listResp = await fetch(listUrl, { headers: { "User-Agent": UA } });
+  if (!listResp.ok) return [];
+
+  const listData = await listResp.json();
+  const pages = listData.query?.pages || {};
+  const page = Object.values(pages)[0] as any;
+  if (!page?.images) return [];
+
+  // Filter to only .jpg/.jpeg/.png files, skip SVGs, flags, logos, icons, maps
+  const imageFiles: string[] = page.images
+    .map((img: any) => img.title as string)
+    .filter((title: string) => {
+      const lower = title.toLowerCase();
+      return (
+        (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png")) &&
+        !lower.includes("flag") &&
+        !lower.includes("logo") &&
+        !lower.includes("icon") &&
+        !lower.includes("coat_of_arms") &&
+        !lower.includes("map") &&
+        !lower.includes("locator") &&
+        !lower.includes("commons-logo") &&
+        !lower.includes("wiki")
+      );
+    })
+    .slice(0, 6);
+
+  if (imageFiles.length === 0) return [];
+
+  // Step 2: Get thumb URLs for these files (batch up to 6)
+  const titles = imageFiles.join("|");
+  const infoUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles)}&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json`;
+  const infoResp = await fetch(infoUrl, { headers: { "User-Agent": UA } });
+  if (!infoResp.ok) return [];
+
+  const infoData = await infoResp.json();
+  const infoPages = infoData.query?.pages || {};
+  const urls: string[] = [];
+
+  for (const p of Object.values(infoPages) as any[]) {
+    const thumbUrl = p.imageinfo?.[0]?.thumburl;
+    if (thumbUrl) urls.push(thumbUrl);
+  }
+
+  return urls.slice(0, 5);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -18,47 +70,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch images for each destination using Wikimedia Commons API
     const results: Record<string, string[]> = {};
 
     await Promise.all(
       destinations.slice(0, 15).map(async (dest: { name: string; country: string }) => {
         try {
-          const query = `${dest.name} ${dest.country} landmark attraction`;
-          const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=6&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=600&format=json&origin=*`;
-
-          const resp = await fetch(url, {
-            headers: { "User-Agent": "LovableTravelApp/1.0" },
-          });
-
-          if (!resp.ok) {
-            results[dest.name] = [];
-            return;
-          }
-
-          const data = await resp.json();
-          const pages = data.query?.pages || {};
-          const imageUrls: string[] = [];
-
-          for (const page of Object.values(pages) as any[]) {
-            const info = page.imageinfo?.[0];
-            if (info?.thumburl) {
-              // Filter out SVGs, icons, logos
-              const thumbUrl: string = info.thumburl;
-              if (
-                !thumbUrl.endsWith(".svg") &&
-                !thumbUrl.includes("logo") &&
-                !thumbUrl.includes("icon") &&
-                !thumbUrl.includes("Flag_of")
-              ) {
-                imageUrls.push(thumbUrl);
-              }
-            }
-          }
-
-          results[dest.name] = imageUrls.slice(0, 5);
+          results[dest.name] = await fetchImagesForDestination(dest.name);
         } catch (err) {
-          console.error(`Failed to fetch images for ${dest.name}:`, err);
+          console.error(`Failed for ${dest.name}:`, err);
           results[dest.name] = [];
         }
       })
