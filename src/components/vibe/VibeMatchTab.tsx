@@ -48,6 +48,21 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
     }
   }, []);
 
+  const readFileAsDataUrl = useCallback((file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+          return;
+        }
+        reject(new Error("Could not preview the selected image."));
+      };
+      reader.onerror = () => reject(new Error("Could not preview the selected image."));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
   const handleImageSelected = useCallback(async (file: File) => {
     if (!user) return;
 
