@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import VibeInput from "./VibeInput";
 import VibeLoading from "./VibeLoading";
 import VibeResults from "./VibeResults";
+import VibeHistory from "./VibeHistory";
 
 interface VibeMatchTabProps {
   onDestinationClick: (dest: any) => void;
@@ -122,6 +123,18 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
           />
         )}
       </AnimatePresence>
+
+      <VibeHistory
+        onRestore={({ imagePreview: img, extractedVibe, matchExplanation, matchedDestinations }) => {
+          setImagePreview(img);
+          setResults({
+            extracted_vibe: extractedVibe,
+            match_explanation: matchExplanation,
+            matched_destinations: matchedDestinations,
+          });
+          setState("results");
+        }}
+      />
     </div>
   );
 };
