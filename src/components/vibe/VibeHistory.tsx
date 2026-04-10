@@ -14,6 +14,7 @@ interface VibeSearch {
 }
 
 interface VibeHistoryProps {
+  refreshKey?: number;
   onRestore: (search: {
     imagePreview: string | null;
     extractedVibe: any;
@@ -22,7 +23,7 @@ interface VibeHistoryProps {
   }) => void;
 }
 
-const VibeHistory = ({ onRestore }: VibeHistoryProps) => {
+const VibeHistory = ({ refreshKey = 0, onRestore }: VibeHistoryProps) => {
   const { user } = useAuth();
   const [searches, setSearches] = useState<VibeSearch[]>([]);
   const [expanded, setExpanded] = useState(false);
@@ -31,6 +32,7 @@ const VibeHistory = ({ onRestore }: VibeHistoryProps) => {
   useEffect(() => {
     if (!user) return;
     const fetch = async () => {
+      setLoading(true);
       const { data } = await supabase
         .from("vibe_searches")
         .select("id, image_url_temp, extracted_vibe, match_explanation, matched_destinations, created_at")
@@ -41,7 +43,7 @@ const VibeHistory = ({ onRestore }: VibeHistoryProps) => {
       setLoading(false);
     };
     fetch();
-  }, [user]);
+  }, [user, refreshKey]);
 
   if (loading || searches.length === 0) return null;
 
@@ -73,7 +75,7 @@ const VibeHistory = ({ onRestore }: VibeHistoryProps) => {
                 key={s.id}
                 onClick={() =>
                   onRestore({
-                    imagePreview: null,
+                    imagePreview: s.image_url_temp,
                     extractedVibe: s.extracted_vibe,
                     matchExplanation: s.match_explanation || "",
                     matchedDestinations: (s.matched_destinations as any[]) || [],

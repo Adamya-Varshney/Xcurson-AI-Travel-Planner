@@ -399,10 +399,9 @@ Deno.serve(async (req) => {
       console.error("Matching AI error:", matchingResponse.status, await matchingResponse.text());
     }
 
-    // ─── STEP 3: Save results + cleanup image ───
+    // ─── STEP 3: Save results for history ───
     console.log("Step 3: Saving results...");
 
-    // Save to vibe_searches
     await supabase.from("vibe_searches").insert({
       user_id: user.id,
       image_url_temp: actualImageUrl || image_url,
@@ -410,19 +409,6 @@ Deno.serve(async (req) => {
       match_explanation: matchExplanation,
       matched_destinations: matchedDestinations,
     });
-
-    // Delete temp image from storage (fire-and-forget)
-    try {
-      const urlObj = new URL(image_url);
-      const pathParts = urlObj.pathname.split("/storage/v1/object/public/vibe-images/");
-      if (pathParts.length > 1) {
-        const filePath = decodeURIComponent(pathParts[1]);
-        await supabase.storage.from("vibe-images").remove([filePath]);
-        console.log("Deleted temp image:", filePath);
-      }
-    } catch (cleanupErr) {
-      console.error("Image cleanup error (non-fatal):", cleanupErr);
-    }
 
     return new Response(
       JSON.stringify({
