@@ -23,6 +23,7 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
     match_explanation: string;
     matched_destinations: any[];
   } | null>(null);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const objectPreviewRef = useRef<string | null>(null);
 
   const updateImagePreview = useCallback((nextPreview: string | null) => {
