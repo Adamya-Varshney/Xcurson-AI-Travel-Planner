@@ -93,6 +93,11 @@ const OnboardingWizard = () => {
         onboarding_completed: true,
       });
 
+      // Fire-and-forget AI analysis to refine experience level
+      supabase.functions.invoke("analyze-profile", {
+        body: { onboardingData: data },
+      }).catch(console.error);
+
       toast({ title: "Welcome aboard! 🎉", description: "Your travel profile is ready." });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
