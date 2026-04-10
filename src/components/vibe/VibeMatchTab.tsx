@@ -66,13 +66,11 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
   const handleImageSelected = useCallback(async (file: File) => {
     if (!user) return;
 
-    // Create preview synchronously using object URL
-    const previewUrl = URL.createObjectURL(file);
-    setImagePreview(previewUrl);
-
-    // Upload to storage
-    setState("loading");
     try {
+      const previewUrl = await readFileAsDataUrl(file);
+      setImagePreview(previewUrl);
+      setState("loading");
+
       const fileName = `${user.id}/${Date.now()}-${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("vibe-images")
@@ -94,7 +92,7 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
       });
       setState("input");
     }
-  }, [user, processVibeMatch]);
+  }, [user, processVibeMatch, readFileAsDataUrl]);
 
   const handleUrlSubmitted = useCallback(async (url: string) => {
     setImagePreview(url);
