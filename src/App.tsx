@@ -17,8 +17,7 @@ const AppRoutes = () => {
   const { user } = useAuth();
   const { pathname } = useLocation();
 
-  // Show bottom nav on authenticated pages (not auth/landing)
-  const showNav = !!user && pathname !== "/auth";
+  const showNav = !!user;
 
   return (
     <>
