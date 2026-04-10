@@ -14,7 +14,167 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          booking_type: string
+          confirmation_code: string | null
+          cost_amount: number | null
+          cost_currency: string | null
+          created_at: string
+          end_datetime: string | null
+          id: string
+          notes: string | null
+          provider: string | null
+          start_datetime: string | null
+          title: string
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_type: string
+          confirmation_code?: string | null
+          cost_amount?: number | null
+          cost_currency?: string | null
+          created_at?: string
+          end_datetime?: string | null
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          start_datetime?: string | null
+          title: string
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_type?: string
+          confirmation_code?: string | null
+          cost_amount?: number | null
+          cost_currency?: string | null
+          created_at?: string
+          end_datetime?: string | null
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          start_datetime?: string | null
+          title?: string
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          destination: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          start_date: string | null
+          status: string
+          title: string
+          traveller_count: number | null
+          trip_mode: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          destination?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          traveller_count?: number | null
+          trip_mode?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          destination?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          traveller_count?: number | null
+          trip_mode?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          cultural_preferences: Json | null
+          experience_level: string | null
+          experience_preferences: Json | null
+          food_preferences: Json | null
+          full_name: string | null
+          home_city: string | null
+          home_country: string | null
+          id: string
+          onboarding_completed: boolean | null
+          past_trips: Json | null
+          place_preferences: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          cultural_preferences?: Json | null
+          experience_level?: string | null
+          experience_preferences?: Json | null
+          food_preferences?: Json | null
+          full_name?: string | null
+          home_city?: string | null
+          home_country?: string | null
+          id?: string
+          onboarding_completed?: boolean | null
+          past_trips?: Json | null
+          place_preferences?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          cultural_preferences?: Json | null
+          experience_level?: string | null
+          experience_preferences?: Json | null
+          food_preferences?: Json | null
+          full_name?: string | null
+          home_city?: string | null
+          home_country?: string | null
+          id?: string
+          onboarding_completed?: boolean | null
+          past_trips?: Json | null
+          place_preferences?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
