@@ -11,6 +11,74 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
+const normalizeLandscapeType = (value: string | undefined) => {
+  const v = (value || "").toLowerCase().trim();
+  if (["mountain", "coastal", "urban", "forest", "desert", "tropical", "rural", "arctic"].includes(v)) return v;
+  if (/(city|urban|street|building|interior|architectural|architecture|temple|palace|hall|museum)/.test(v)) return "urban";
+  if (/(coast|coastal|beach|ocean|sea|shore|island)/.test(v)) return "coastal";
+  if (/(forest|wood|woods|jungle|rainforest)/.test(v)) return "forest";
+  if (/(desert|dune|canyon)/.test(v)) return "desert";
+  if (/(tropical|palm|lagoon)/.test(v)) return "tropical";
+  if (/(rural|village|farmland|countryside)/.test(v)) return "rural";
+  if (/(snow|ice|glacier|arctic)/.test(v)) return "arctic";
+  return "urban";
+};
+
+const normalizeCrowdDensity = (value: string | undefined) => {
+  const v = (value || "").toLowerCase().trim();
+  if (["empty", "sparse", "moderate", "busy", "packed"].includes(v)) return v;
+  if (/(empty|none|deserted|quiet)/.test(v)) return "empty";
+  if (/(few|minimal|light|sparse)/.test(v)) return "sparse";
+  if (/(moderate|some|medium)/.test(v)) return "moderate";
+  if (/(busy|crowded|active)/.test(v)) return "busy";
+  if (/(packed|jammed|dense)/.test(v)) return "packed";
+  return "moderate";
+};
+
+const normalizePace = (value: string | undefined) => {
+  const v = (value || "").toLowerCase().trim();
+  if (["slow", "moderate", "fast"].includes(v)) return v;
+  if (/(slow|calm|serene|leisurely|gentle)/.test(v)) return "slow";
+  if (/(fast|rapid|energetic|dynamic)/.test(v)) return "fast";
+  return "moderate";
+};
+
+const normalizeLightQuality = (value: string | undefined) => {
+  const v = (value || "").toLowerCase().trim();
+  if (["golden_hour", "bright", "overcast", "twilight", "night"].includes(v)) return v;
+  if (/(golden|sunset|sunrise)/.test(v)) return "golden_hour";
+  if (/(bright|sunny|daylight|well-lit)/.test(v)) return "bright";
+  if (/(twilight|dusk|dawn|evening)/.test(v)) return "twilight";
+  if (/(night|dark)/.test(v)) return "night";
+  return "overcast";
+};
+
+const normalizePrimaryActivity = (value: string | undefined) => {
+  const v = (value || "").toLowerCase().trim();
+  if (["relaxation", "adventure", "culture", "nightlife", "nature", "gastronomy", "spirituality"].includes(v)) return v;
+  if (/(culture|history|museum|architecture|sightseeing|heritage|art)/.test(v)) return "culture";
+  if (/(adventure|hiking|trekking|climbing|exploring)/.test(v)) return "adventure";
+  if (/(nature|wildlife|landscape|outdoors)/.test(v)) return "nature";
+  if (/(food|dining|cuisine|gastronomy)/.test(v)) return "gastronomy";
+  if (/(spiritual|temple|meditation|ritual)/.test(v)) return "spirituality";
+  if (/(party|nightlife|club|bar)/.test(v)) return "nightlife";
+  return "relaxation";
+};
+
+const normalizeExtractedVibe = (raw: any) => ({
+  landscape_type: normalizeLandscapeType(raw?.landscape_type),
+  crowd_density: normalizeCrowdDensity(raw?.crowd_density),
+  pace: normalizePace(raw?.pace),
+  light_quality: normalizeLightQuality(raw?.light_quality),
+  primary_activity: normalizePrimaryActivity(raw?.primary_activity),
+  mood_tags: Array.isArray(raw?.mood_tags)
+    ? raw.mood_tags.map((tag: unknown) => String(tag).toLowerCase().trim()).filter(Boolean).slice(0, 5)
+    : ["atmospheric", "travel", "scenic"],
+  match_explanation: typeof raw?.match_explanation === "string" && raw.match_explanation.trim()
+    ? raw.match_explanation.trim()
+    : "Matches because — this image evokes a unique travel vibe.",
+});
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -122,28 +190,19 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-3-flash-preview",
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
-            content: `You are a travel vibe analyst. Analyze the provided travel/landscape image and extract structured vibe data. Return ONLY a valid JSON object with these exact keys:
-{
-  "landscape_type": "one of: mountain, coastal, urban, forest, desert, tropical, rural, arctic",
-  "crowd_density": "one of: empty, sparse, moderate, busy, packed",
-  "pace": "one of: slow, moderate, fast",
-  "light_quality": "one of: golden_hour, bright, overcast, twilight, night",
-  "primary_activity": "one of: relaxation, adventure, culture, nightlife, nature, gastronomy, spirituality",
-  "mood_tags": ["array", "of", "3-5", "mood", "words"],
-  "match_explanation": "A 1-sentence explanation starting with 'Matches because —' explaining the travel vibe this image evokes"
-}
-Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON object.`,
+            content: "Analyze the provided travel image and return ONLY a JSON object with the exact keys landscape_type, crowd_density, pace, light_quality, primary_activity, mood_tags, match_explanation. Use these enum values only: landscape_type=mountain|coastal|urban|forest|desert|tropical|rural|arctic, crowd_density=empty|sparse|moderate|busy|packed, pace=slow|moderate|fast, light_quality=golden_hour|bright|overcast|twilight|night, primary_activity=relaxation|adventure|culture|nightlife|nature|gastronomy|spirituality. mood_tags must be 3-5 short words. match_explanation must be one sentence starting with 'Matches because —'. No markdown.",
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Analyze this travel image and extract the vibe attributes.",
+                text: "Return the vibe attributes as strict JSON using the allowed values.",
               },
               {
                 type: "image_url",
@@ -154,8 +213,8 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
             ],
           },
         ],
-        temperature: 0.3,
-        max_tokens: 1000,
+        temperature: 0.1,
+        max_tokens: 350,
       }),
     });
 
@@ -186,21 +245,36 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
     }
 
     const vibeAiData = await vibeExtractionResponse.json();
-    const vibeContent = vibeAiData.choices?.[0]?.message?.content || "";
+    const vibeChoice = vibeAiData.choices?.[0];
+    const vibeContent = vibeChoice?.message?.content || "";
+    const finishReason = vibeChoice?.finish_reason;
 
     // Parse vibe JSON
     let extractedVibe: any;
     let matchExplanation: string;
     try {
-      // Strip markdown fences if present
-      let cleaned = vibeContent.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("No JSON found in AI response");
-      extractedVibe = JSON.parse(jsonMatch[0]);
-      matchExplanation = extractedVibe.match_explanation || "Matches because — this image evokes a unique travel vibe.";
+      let cleaned = vibeContent
+        .replace(/```(?:json)?\s*/gi, "")
+        .replace(/``` ?\s*/g, "")
+        .replace(/[\x00-\x1F\x7F]/g, "")
+        .trim();
+
+      const jsonStart = cleaned.search(/[\{\[]/);
+      const jsonEnd = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
+
+      if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+        throw new Error(`No JSON found in AI response (finish_reason=${finishReason || "unknown"})`);
+      }
+
+      cleaned = cleaned.slice(jsonStart, jsonEnd + 1)
+        .replace(/,\s*}/g, "}")
+        .replace(/,\s*]/g, "]");
+
+      extractedVibe = normalizeExtractedVibe(JSON.parse(cleaned));
+      matchExplanation = extractedVibe.match_explanation;
       delete extractedVibe.match_explanation;
     } catch (parseErr) {
-      console.error("Failed to parse vibe JSON:", parseErr, vibeContent);
+      console.error("Failed to parse vibe JSON:", parseErr, { finishReason, vibeContent });
       return new Response(
         JSON.stringify({ error: "Failed to parse vibe data from image" }),
         {
