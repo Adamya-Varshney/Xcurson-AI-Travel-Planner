@@ -155,7 +155,7 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
           },
         ],
         temperature: 0.3,
-        max_tokens: 500,
+        max_tokens: 1000,
       }),
     });
 
@@ -192,7 +192,9 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
     let extractedVibe: any;
     let matchExplanation: string;
     try {
-      const jsonMatch = vibeContent.match(/\{[\s\S]*\}/);
+      // Strip markdown fences if present
+      let cleaned = vibeContent.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("No JSON found in AI response");
       extractedVibe = JSON.parse(jsonMatch[0]);
       matchExplanation = extractedVibe.match_explanation || "Matches because — this image evokes a unique travel vibe.";
