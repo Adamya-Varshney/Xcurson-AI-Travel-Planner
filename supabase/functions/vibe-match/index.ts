@@ -405,7 +405,7 @@ Deno.serve(async (req) => {
     // Save to vibe_searches
     await supabase.from("vibe_searches").insert({
       user_id: user.id,
-      image_url_temp: image_url,
+      image_url_temp: actualImageUrl || image_url,
       extracted_vibe: extractedVibe,
       match_explanation: matchExplanation,
       matched_destinations: matchedDestinations,
