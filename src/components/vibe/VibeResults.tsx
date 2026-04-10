@@ -72,9 +72,13 @@ const VibeResults = ({
         className="rounded-2xl border border-border bg-card overflow-hidden"
       >
         {imagePreview && (
-          <div className="relative h-32 sm:h-40">
+          <div className="relative h-48 sm:h-56">
             <img src={imagePreview} alt="Your vibe" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
+            <div className="absolute bottom-3 left-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm">
+              <Sparkles className="w-3 h-3 text-white" />
+              <span className="text-[11px] font-medium text-white">Your uploaded image</span>
+            </div>
           </div>
         )}
         <div className="p-4 space-y-3">
