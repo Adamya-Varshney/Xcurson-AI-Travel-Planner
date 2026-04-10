@@ -202,12 +202,17 @@ const Discover = () => {
         ) : destinations.length > 0 ? (
           <div className="grid gap-4">
             {destinations.map((dest, i) => (
-              <DestinationCard
-                key={dest.destination_id}
-                destination={dest}
-                rank={i}
-                onClick={() => setSelectedDest(dest)}
-              />
+              <div key={dest.destination_id}>
+                <DestinationCard
+                  destination={dest}
+                  rank={i}
+                  onClick={() => setSelectedDest(dest)}
+                />
+                <DestinationImageCarousel
+                  images={destinationImages[dest.name] || []}
+                  destinationName={dest.name}
+                />
+              </div>
             ))}
           </div>
         ) : !showMoodCheckIn ? (
