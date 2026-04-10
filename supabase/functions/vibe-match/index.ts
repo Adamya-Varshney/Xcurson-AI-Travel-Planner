@@ -126,17 +126,7 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a travel vibe analyst. Analyze the provided travel/landscape image and extract structured vibe data. Return ONLY a valid JSON object with these exact keys:
-{
-  "landscape_type": "one of: mountain, coastal, urban, forest, desert, tropical, rural, arctic",
-  "crowd_density": "one of: empty, sparse, moderate, busy, packed",
-  "pace": "one of: slow, moderate, fast",
-  "light_quality": "one of: golden_hour, bright, overcast, twilight, night",
-  "primary_activity": "one of: relaxation, adventure, culture, nightlife, nature, gastronomy, spirituality",
-  "mood_tags": ["array", "of", "3-5", "mood", "words"],
-  "match_explanation": "A 1-sentence explanation starting with 'Matches because —' explaining the travel vibe this image evokes"
-}
-Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON object.`,
+            content: "You are a travel vibe analyst. Analyze the provided travel image and extract structured vibe attributes. Use the provided tool to return the result.",
           },
           {
             role: "user",
@@ -154,8 +144,65 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
             ],
           },
         ],
-        temperature: 0.3,
-        max_tokens: 1000,
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "extract_vibe",
+              description: "Extract vibe attributes from a travel image.",
+              parameters: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  landscape_type: {
+                    type: "string",
+                    enum: ["mountain", "coastal", "urban", "forest", "desert", "tropical", "rural", "arctic"],
+                  },
+                  crowd_density: {
+                    type: "string",
+                    enum: ["empty", "sparse", "moderate", "busy", "packed"],
+                  },
+                  pace: {
+                    type: "string",
+                    enum: ["slow", "moderate", "fast"],
+                  },
+                  light_quality: {
+                    type: "string",
+                    enum: ["golden_hour", "bright", "overcast", "twilight", "night"],
+                  },
+                  primary_activity: {
+                    type: "string",
+                    enum: ["relaxation", "adventure", "culture", "nightlife", "nature", "gastronomy", "spirituality"],
+                  },
+                  mood_tags: {
+                    type: "array",
+                    minItems: 3,
+                    maxItems: 5,
+                    items: { type: "string" },
+                  },
+                  match_explanation: {
+                    type: "string",
+                  },
+                },
+                required: [
+                  "landscape_type",
+                  "crowd_density",
+                  "pace",
+                  "light_quality",
+                  "primary_activity",
+                  "mood_tags",
+                  "match_explanation"
+                ],
+              },
+            },
+          },
+        ],
+        tool_choice: {
+          type: "function",
+          function: { name: "extract_vibe" },
+        },
+        temperature: 0.2,
+        max_tokens: 700,
       }),
     });
 
@@ -186,21 +233,45 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
     }
 
     const vibeAiData = await vibeExtractionResponse.json();
-    const vibeContent = vibeAiData.choices?.[0]?.message?.content || "";
+    const vibeChoice = vibeAiData.choices?.[0];
+    const toolArgs = vibeChoice?.message?.tool_calls?.[0]?.function?.arguments;
+    const vibeContent = vibeChoice?.message?.content || "";
+    const finishReason = vibeChoice?.finish_reason;
 
     // Parse vibe JSON
     let extractedVibe: any;
     let matchExplanation: string;
     try {
-      // Strip markdown fences if present
-      let cleaned = vibeContent.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("No JSON found in AI response");
-      extractedVibe = JSON.parse(jsonMatch[0]);
+      if (toolArgs) {
+        extractedVibe = JSON.parse(toolArgs);
+      } else {
+        let cleaned = vibeContent
+          .replace(/```(?:json)?\s*/gi, "")
+          .replace(/```\s*/g, "")
+          .replace(/[\x00-\x1F\x7F]/g, "")
+          .trim();
+
+        const jsonStart = cleaned.search(/[\{\[]/);
+        const jsonEnd = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
+
+        if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+          if (finishReason === "length") {
+            throw new Error("AI response was truncated before completing structured output");
+          }
+          throw new Error("No JSON found in AI response");
+        }
+
+        cleaned = cleaned.slice(jsonStart, jsonEnd + 1)
+          .replace(/,\s*}/g, "}")
+          .replace(/,\s*]/g, "]");
+
+        extractedVibe = JSON.parse(cleaned);
+      }
+
       matchExplanation = extractedVibe.match_explanation || "Matches because — this image evokes a unique travel vibe.";
       delete extractedVibe.match_explanation;
     } catch (parseErr) {
-      console.error("Failed to parse vibe JSON:", parseErr, vibeContent);
+      console.error("Failed to parse vibe JSON:", parseErr, { finishReason, vibeContent, toolArgs });
       return new Response(
         JSON.stringify({ error: "Failed to parse vibe data from image" }),
         {
