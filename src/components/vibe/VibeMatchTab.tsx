@@ -34,6 +34,7 @@ const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
       if (data.error) throw new Error(data.error);
 
       setResults(data);
+      if (data.resolved_image_url) setImagePreview(data.resolved_image_url);
       setState("results");
     } catch (err: any) {
       console.error("Vibe match error:", err);

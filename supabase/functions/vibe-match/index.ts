@@ -355,6 +355,7 @@ Do NOT include any markdown formatting or code fences. Return ONLY the raw JSON 
         extracted_vibe: extractedVibe,
         match_explanation: matchExplanation,
         matched_destinations: matchedDestinations,
+        resolved_image_url: actualImageUrl,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
