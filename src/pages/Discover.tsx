@@ -12,6 +12,7 @@ import DestinationCard from "@/components/discovery/DestinationCard";
 import DestinationDetail from "@/components/discovery/DestinationDetail";
 import DestinationImageCarousel from "@/components/discovery/DestinationImageCarousel";
 import VibeMatchTab from "@/components/vibe/VibeMatchTab";
+import MoodHistory from "@/components/discovery/MoodHistory";
 
 interface RankedDestination {
   destination_id: string;
@@ -261,6 +262,15 @@ const Discover = () => {
                 <p className="text-muted-foreground">No destinations found. Try changing your mood!</p>
               </div>
             ) : null}
+
+            <MoodHistory
+              onRestore={({ mood, tripMode: mode, destinations: dests }) => {
+                setCurrentMood(mood);
+                setTripMode(mode);
+                setDestinations(dests);
+                setShowMoodCheckIn(false);
+              }}
+            />
           </>
         ) : (
           <VibeMatchTab onDestinationClick={(dest) => setSelectedDest(dest)} />
