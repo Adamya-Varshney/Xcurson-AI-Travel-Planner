@@ -136,6 +136,65 @@ export type Database = {
         }
         Relationships: []
       }
+      itineraries: {
+        Row: {
+          budget_summary: Json | null
+          cities: string[]
+          content: Json
+          created_at: string
+          days_count: number
+          edit_history: Json[] | null
+          generated_by: string | null
+          id: string
+          is_user_edited: boolean
+          title: string
+          total_est_cost_inr: number | null
+          trip_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_summary?: Json | null
+          cities?: string[]
+          content?: Json
+          created_at?: string
+          days_count?: number
+          edit_history?: Json[] | null
+          generated_by?: string | null
+          id?: string
+          is_user_edited?: boolean
+          title?: string
+          total_est_cost_inr?: number | null
+          trip_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_summary?: Json | null
+          cities?: string[]
+          content?: Json
+          created_at?: string
+          days_count?: number
+          edit_history?: Json[] | null
+          generated_by?: string | null
+          id?: string
+          is_user_edited?: boolean
+          title?: string
+          total_est_cost_inr?: number | null
+          trip_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itineraries_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mood_sessions: {
         Row: {
           created_at: string | null
