@@ -12,12 +12,11 @@ import { cn } from "@/lib/utils";
 interface ItinerarySetupProps {
   onGenerate: (cities: string[], daysCount: number, tripMode: string, startDate: Date) => void;
   isGenerating: boolean;
-  prefillCity?: string | null;
 }
 
-const ItinerarySetup = ({ onGenerate, isGenerating, prefillCity }: ItinerarySetupProps) => {
+const ItinerarySetup = ({ onGenerate, isGenerating }: ItinerarySetupProps) => {
   const [cityInput, setCityInput] = useState("");
-  const [cities, setCities] = useState<string[]>(prefillCity ? [prefillCity] : []);
+  const [cities, setCities] = useState<string[]>([]);
   const [daysCount, setDaysCount] = useState(3);
   const [tripMode, setTripMode] = useState("solo");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);

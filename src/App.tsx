@@ -11,7 +11,6 @@ import Trips from "./pages/Trips";
 import TripDetail from "./pages/TripDetail";
 import Discover from "./pages/Discover";
 import Itinerary from "./pages/Itinerary";
-import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,7 +31,6 @@ const AppRoutes = () => {
           <Route path="/trips" element={<Trips />} />
           <Route path="/trips/:tripId" element={<TripDetail />} />
           <Route path="/itinerary" element={<Itinerary />} />
-          <Route path="/wishlist" element={<Wishlist />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>

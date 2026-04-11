@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Sparkles, MapPin, ArrowRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import WishlistHeart from "@/components/WishlistHeart";
 
 interface VibeData {
   landscape_type: string;
@@ -32,8 +31,6 @@ interface VibeResultsProps {
   imagePreview?: string;
   onDestinationClick: (dest: MatchedDestination) => void;
   onReset: () => void;
-  isWishlisted?: (name: string) => boolean;
-  onToggleWishlist?: (dest: MatchedDestination) => void;
 }
 
 const VIBE_EMOJI: Record<string, string> = {
@@ -53,8 +50,6 @@ const VibeResults = ({
   imagePreview,
   onDestinationClick,
   onReset,
-  isWishlisted,
-  onToggleWishlist,
 }: VibeResultsProps) => {
   const vibeAttributes = [
     { label: "Landscape", value: extractedVibe.landscape_type, emoji: VIBE_EMOJI[extractedVibe.landscape_type] },
@@ -184,15 +179,7 @@ const VibeResults = ({
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {onToggleWishlist && (
-                <WishlistHeart
-                  isWishlisted={isWishlisted ? isWishlisted(dest.name) : false}
-                  onClick={() => onToggleWishlist(dest)}
-                />
-              )}
-              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
           </motion.div>
         ))}
       </div>

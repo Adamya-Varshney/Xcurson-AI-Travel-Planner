@@ -10,13 +10,11 @@ import VibeHistory from "./VibeHistory";
 
 interface VibeMatchTabProps {
   onDestinationClick: (dest: any) => void;
-  isWishlisted?: (name: string) => boolean;
-  onToggleWishlist?: (dest: any) => void;
 }
 
 type VibeState = "input" | "loading" | "results";
 
-const VibeMatchTab = ({ onDestinationClick, isWishlisted, onToggleWishlist }: VibeMatchTabProps) => {
+const VibeMatchTab = ({ onDestinationClick }: VibeMatchTabProps) => {
   const { user } = useAuth();
   const [state, setState] = useState<VibeState>("input");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -144,8 +142,6 @@ const VibeMatchTab = ({ onDestinationClick, isWishlisted, onToggleWishlist }: Vi
             imagePreview={imagePreview || undefined}
             onDestinationClick={onDestinationClick}
             onReset={handleReset}
-            isWishlisted={isWishlisted}
-            onToggleWishlist={onToggleWishlist}
           />
         )}
       </AnimatePresence>
