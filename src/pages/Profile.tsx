@@ -31,15 +31,12 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Basic Info
   const [fullName, setFullName] = useState("");
   const [homeCity, setHomeCity] = useState("");
   const [homeCountry, setHomeCountry] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [languages, setLanguages] = useState<string[]>([]);
-
-  // Travel
   const [interests, setInterests] = useState<string[]>([]);
   const [travelStyle, setTravelStyle] = useState<string[]>([]);
   const [travelPace, setTravelPace] = useState<string[]>([]);
@@ -47,8 +44,6 @@ const Profile = () => {
   const [companions, setCompanions] = useState<string[]>([]);
   const [mobility, setMobility] = useState<string[]>([]);
   const [culturalPrefs, setCulturalPrefs] = useState<string[]>([]);
-
-  // Food
   const [dietary, setDietary] = useState<string[]>([]);
   const [cuisines, setCuisines] = useState<string[]>([]);
 
@@ -115,70 +110,74 @@ const Profile = () => {
   }
 
   const renderBadges = (items: string[], variant: "secondary" | "outline" = "secondary") =>
-    items.length ? items.map((i: string) => <Badge key={i} variant={variant}>{i}</Badge>) : <span className="text-muted-foreground text-sm">Not set</span>;
+    items.length ? items.map((i: string) => <Badge key={i} variant={variant} className="text-[10px] sm:text-xs">{i}</Badge>) : <span className="text-muted-foreground text-xs sm:text-sm">Not set</span>;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="px-6 py-4 flex items-center gap-3 border-b border-border">
-        <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button></Link>
-        <h1 className="text-lg font-display font-bold text-foreground">Profile</h1>
+    <div className="min-h-screen bg-background pb-20">
+      <header className="px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-3 border-b border-border">
+        <Link to="/"><Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9"><ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" /></Button></Link>
+        <h1 className="text-base sm:text-lg font-display font-bold text-foreground">Profile</h1>
         <div className="ml-auto">
           {editing ? (
-            <Button onClick={handleSave} disabled={saving} size="sm" className="gradient-primary border-0">
-              <Save className="w-4 h-4 mr-1" /> {saving ? "Saving..." : "Save"}
+            <Button onClick={handleSave} disabled={saving} size="sm" className="gradient-primary border-0 text-xs sm:text-sm">
+              <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {saving ? "Saving..." : "Save"}
             </Button>
           ) : (
-            <Button onClick={startEditing} variant="outline" size="sm">Edit</Button>
+            <Button onClick={startEditing} variant="outline" size="sm" className="text-xs sm:text-sm">Edit</Button>
           )}
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-6 py-6 space-y-6 pb-24">
+      <main className="max-w-lg mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Basic Info */}
         <Card className="border-0 shadow-sm">
-          <CardHeader><CardTitle className="text-base">Basic Info</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+          <CardHeader className="px-4 sm:px-6 py-3 sm:py-4"><CardTitle className="text-sm sm:text-base">Basic Info</CardTitle></CardHeader>
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
             {editing ? (
               <>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Name</label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">City</label><Input value={homeCity} onChange={(e) => setHomeCity(e.target.value)} placeholder="City" /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Country</label><Input value={homeCountry} onChange={(e) => setHomeCountry(e.target.value)} placeholder="Country" /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Age</label><Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="Age" /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Gender</label><ChipSelector options={GENDERS} selected={gender ? [gender] : []} onChange={(s) => setGender(s[0] || "")} multiple={false} /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Languages</label><ChipSelector options={LANGUAGES} selected={languages} onChange={setLanguages} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Name</label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="text-sm" /></div>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">City</label><Input value={homeCity} onChange={(e) => setHomeCity(e.target.value)} placeholder="City" className="text-sm" /></div>
+                  <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Country</label><Input value={homeCountry} onChange={(e) => setHomeCountry(e.target.value)} placeholder="Country" className="text-sm" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Age</label><Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="Age" className="text-sm" /></div>
+                  <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Gender</label><ChipSelector options={GENDERS} selected={gender ? [gender] : []} onChange={(s) => setGender(s[0] || "")} multiple={false} /></div>
+                </div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Languages</label><ChipSelector options={LANGUAGES} selected={languages} onChange={setLanguages} /></div>
               </>
             ) : (
-              <>
-                <div><span className="text-sm text-muted-foreground">Name:</span> <span className="font-medium">{profile?.full_name || "—"}</span></div>
-                <div><span className="text-sm text-muted-foreground">Location:</span> <span className="font-medium">{[profile?.home_city, profile?.home_country].filter(Boolean).join(", ") || "—"}</span></div>
-                <div><span className="text-sm text-muted-foreground">Age:</span> <span className="font-medium">{ep().age || "—"}</span></div>
-                <div><span className="text-sm text-muted-foreground">Gender:</span> <span className="font-medium">{ep().gender || "—"}</span></div>
-                <div><span className="text-sm text-muted-foreground">Languages:</span> <span className="font-medium">{(ep().languages || []).join(", ") || "—"}</span></div>
-                <div><span className="text-sm text-muted-foreground">Level:</span> <Badge variant="outline">{profile?.experience_level || "first_timer"}</Badge></div>
-              </>
+              <div className="space-y-2">
+                <div className="text-sm"><span className="text-muted-foreground">Name:</span> <span className="font-medium">{profile?.full_name || "—"}</span></div>
+                <div className="text-sm"><span className="text-muted-foreground">Location:</span> <span className="font-medium">{[profile?.home_city, profile?.home_country].filter(Boolean).join(", ") || "—"}</span></div>
+                <div className="text-sm"><span className="text-muted-foreground">Age:</span> <span className="font-medium">{ep().age || "—"}</span></div>
+                <div className="text-sm"><span className="text-muted-foreground">Gender:</span> <span className="font-medium">{ep().gender || "—"}</span></div>
+                <div className="text-sm"><span className="text-muted-foreground">Languages:</span> <span className="font-medium">{(ep().languages || []).join(", ") || "—"}</span></div>
+                <div className="text-sm"><span className="text-muted-foreground">Level:</span> <Badge variant="outline" className="text-[10px] sm:text-xs">{profile?.experience_level || "first_timer"}</Badge></div>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Travel Style */}
         <Card className="border-0 shadow-sm">
-          <CardHeader><CardTitle className="text-base">Travel Style</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+          <CardHeader className="px-4 sm:px-6 py-3 sm:py-4"><CardTitle className="text-sm sm:text-base">Travel Style</CardTitle></CardHeader>
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
             {editing ? (
               <>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Style</label><ChipSelector options={TRAVEL_STYLES} selected={travelStyle} onChange={setTravelStyle} /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Pace</label><ChipSelector options={PACES} selected={travelPace} onChange={setTravelPace} multiple={false} /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Accommodation</label><ChipSelector options={ACCOMMODATION} selected={accommodation} onChange={setAccommodation} /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Travel companions</label><ChipSelector options={COMPANIONS} selected={companions} onChange={setCompanions} /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Mobility / accessibility</label><ChipSelector options={MOBILITY} selected={mobility} onChange={setMobility} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Style</label><ChipSelector options={TRAVEL_STYLES} selected={travelStyle} onChange={setTravelStyle} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Pace</label><ChipSelector options={PACES} selected={travelPace} onChange={setTravelPace} multiple={false} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Accommodation</label><ChipSelector options={ACCOMMODATION} selected={accommodation} onChange={setAccommodation} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Travel companions</label><ChipSelector options={COMPANIONS} selected={companions} onChange={setCompanions} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Mobility / accessibility</label><ChipSelector options={MOBILITY} selected={mobility} onChange={setMobility} /></div>
               </>
             ) : (
-              <div className="space-y-3">
-                <div><span className="text-sm text-muted-foreground block mb-1">Style:</span><div className="flex flex-wrap gap-1">{renderBadges(ep().travel_style || [])}</div></div>
-                <div><span className="text-sm text-muted-foreground block mb-1">Pace:</span> <Badge variant="outline">{pp().travel_pace || "—"}</Badge></div>
-                <div><span className="text-sm text-muted-foreground block mb-1">Accommodation:</span><div className="flex flex-wrap gap-1">{renderBadges(pp().preferred_accommodation || [], "outline")}</div></div>
-                <div><span className="text-sm text-muted-foreground block mb-1">Companions:</span><div className="flex flex-wrap gap-1">{renderBadges(ep().travel_companions || [])}</div></div>
-                <div><span className="text-sm text-muted-foreground block mb-1">Mobility:</span><div className="flex flex-wrap gap-1">{renderBadges(ep().mobility_needs || [], "outline")}</div></div>
+              <div className="space-y-2 sm:space-y-3">
+                <div><span className="text-xs sm:text-sm text-muted-foreground block mb-1">Style:</span><div className="flex flex-wrap gap-1">{renderBadges(ep().travel_style || [])}</div></div>
+                <div><span className="text-xs sm:text-sm text-muted-foreground block mb-1">Pace:</span> <Badge variant="outline" className="text-[10px] sm:text-xs">{pp().travel_pace || "—"}</Badge></div>
+                <div><span className="text-xs sm:text-sm text-muted-foreground block mb-1">Accommodation:</span><div className="flex flex-wrap gap-1">{renderBadges(pp().preferred_accommodation || [], "outline")}</div></div>
+                <div><span className="text-xs sm:text-sm text-muted-foreground block mb-1">Companions:</span><div className="flex flex-wrap gap-1">{renderBadges(ep().travel_companions || [])}</div></div>
+                <div><span className="text-xs sm:text-sm text-muted-foreground block mb-1">Mobility:</span><div className="flex flex-wrap gap-1">{renderBadges(ep().mobility_needs || [], "outline")}</div></div>
               </div>
             )}
           </CardContent>
@@ -186,17 +185,17 @@ const Profile = () => {
 
         {/* Interests */}
         <Card className="border-0 shadow-sm">
-          <CardHeader><CardTitle className="text-base">Interests & Culture</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+          <CardHeader className="px-4 sm:px-6 py-3 sm:py-4"><CardTitle className="text-sm sm:text-base">Interests & Culture</CardTitle></CardHeader>
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
             {editing ? (
               <>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Interests</label><ChipSelector options={INTERESTS} selected={interests} onChange={setInterests} /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Cultural vibe</label><ChipSelector options={CULTURAL} selected={culturalPrefs} onChange={setCulturalPrefs} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Interests</label><ChipSelector options={INTERESTS} selected={interests} onChange={setInterests} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Cultural vibe</label><ChipSelector options={CULTURAL} selected={culturalPrefs} onChange={setCulturalPrefs} /></div>
               </>
             ) : (
-              <div className="space-y-3">
-                <div><span className="text-sm text-muted-foreground block mb-1">Interests:</span><div className="flex flex-wrap gap-1">{renderBadges(ep().interests || [])}</div></div>
-                <div><span className="text-sm text-muted-foreground block mb-1">Cultural:</span><div className="flex flex-wrap gap-1">{renderBadges(cp().preferences || [], "outline")}</div></div>
+              <div className="space-y-2 sm:space-y-3">
+                <div><span className="text-xs sm:text-sm text-muted-foreground block mb-1">Interests:</span><div className="flex flex-wrap gap-1">{renderBadges(ep().interests || [])}</div></div>
+                <div><span className="text-xs sm:text-sm text-muted-foreground block mb-1">Cultural:</span><div className="flex flex-wrap gap-1">{renderBadges(cp().preferences || [], "outline")}</div></div>
               </div>
             )}
           </CardContent>
@@ -204,15 +203,15 @@ const Profile = () => {
 
         {/* Food */}
         <Card className="border-0 shadow-sm">
-          <CardHeader><CardTitle className="text-base">Food Preferences</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+          <CardHeader className="px-4 sm:px-6 py-3 sm:py-4"><CardTitle className="text-sm sm:text-base">Food Preferences</CardTitle></CardHeader>
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
             {editing ? (
               <>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Dietary</label><ChipSelector options={DIETARY} selected={dietary} onChange={setDietary} /></div>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Cuisines</label><ChipSelector options={CUISINES} selected={cuisines} onChange={setCuisines} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Dietary</label><ChipSelector options={DIETARY} selected={dietary} onChange={setDietary} /></div>
+                <div><label className="text-[10px] sm:text-xs text-muted-foreground mb-1 block">Cuisines</label><ChipSelector options={CUISINES} selected={cuisines} onChange={setCuisines} /></div>
               </>
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 {renderBadges(fp().dietary || [])}
                 {renderBadges(fp().cuisines || [], "outline")}
               </div>

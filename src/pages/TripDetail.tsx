@@ -46,7 +46,7 @@ const TripDetail = () => {
 
   if (!trip) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <p className="text-muted-foreground">Trip not found</p>
         <Link to="/trips"><Button variant="outline">Back to Trips</Button></Link>
       </div>
@@ -56,51 +56,51 @@ const TripDetail = () => {
   const days = (itinerary?.content as any[]) || [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="px-6 py-4 flex items-center gap-3 border-b border-border">
+    <div className="min-h-screen bg-background pb-20">
+      <header className="px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-3 border-b border-border">
         <Link to="/trips">
-          <Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9"><ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-display font-bold text-foreground truncate">{trip.title}</h1>
-          <div className="flex items-center gap-2 mt-0.5">
+          <h1 className="text-base sm:text-lg font-display font-bold text-foreground truncate">{trip.title}</h1>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {trip.destination && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
                 <MapPin className="w-3 h-3" /> {trip.destination}
               </span>
             )}
             {trip.start_date && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
                 <Calendar className="w-3 h-3" /> {trip.start_date}{trip.end_date && ` → ${trip.end_date}`}
               </span>
             )}
           </div>
         </div>
-        <Badge variant={trip.status === "booked" ? "default" : "secondary"} className="capitalize shrink-0">
+        <Badge variant={trip.status === "booked" ? "default" : "secondary"} className="capitalize shrink-0 text-[10px] sm:text-xs">
           {trip.status}
         </Badge>
       </header>
 
-      <main className="max-w-lg mx-auto px-6 py-6">
+      <main className="max-w-lg mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {!itinerary ? (
-          <div className="text-center py-16 space-y-4">
-            <p className="text-muted-foreground">No itinerary linked to this trip yet.</p>
+          <div className="text-center py-12 sm:py-16 space-y-4">
+            <p className="text-muted-foreground text-sm">No itinerary linked to this trip yet.</p>
             <Link to="/itinerary">
               <Button className="gradient-primary border-0">Create Itinerary</Button>
             </Link>
           </div>
         ) : (
           <Tabs defaultValue="days">
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="days" className="flex-1 gap-1">
-                <List className="w-4 h-4" /> Day by Day
+            <TabsList className="w-full mb-3 sm:mb-4">
+              <TabsTrigger value="days" className="flex-1 gap-1 text-xs sm:text-sm">
+                <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Day by Day
               </TabsTrigger>
-              <TabsTrigger value="summary" className="flex-1 gap-1">
-                <BarChart3 className="w-4 h-4" /> Summary
+              <TabsTrigger value="summary" className="flex-1 gap-1 text-xs sm:text-sm">
+                <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Summary
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="days" className="space-y-6">
+            <TabsContent value="days" className="space-y-4 sm:space-y-6">
               {days.map((day: any) => (
                 <DayView
                   key={day.day_number}
@@ -113,7 +113,7 @@ const TripDetail = () => {
               ))}
             </TabsContent>
 
-            <TabsContent value="summary" className="space-y-4">
+            <TabsContent value="summary" className="space-y-3 sm:space-y-4">
               <ItinerarySummary
                 title={itinerary.title}
                 cities={itinerary.cities}
