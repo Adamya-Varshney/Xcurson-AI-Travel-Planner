@@ -65,7 +65,7 @@ City: ${city}. Day ${day_number}, ${time_slot}. Current activity: "${currentActi
 
     console.log("Re-suggesting slot:", day_number, time_slot, "in", city);
 
-    const model = "gemini-2.5-flash-lite-preview-06-17";
+    const model = "gemini-2.5-flash-lite";
     const aiResponse = await fetch(
       `${GEMINI_API}/${model}:generateContent?key=${GOOGLE_AI_KEY}`,
       {
