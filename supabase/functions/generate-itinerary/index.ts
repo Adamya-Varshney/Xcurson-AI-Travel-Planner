@@ -67,7 +67,10 @@ Rules:
   - "start_time" (string, e.g. "09:00 AM")
   - "end_time" (string, e.g. "12:00 PM")
   - "duration_hrs" (number, e.g. 2.5)
-  - "cost_inr" (integer, estimated cost in INR)
+  - "cost_inr" (integer, activity/entry fee cost in INR)
+  - "commute_cost_inr" (integer, estimated commute/transport cost to reach the venue)
+  - "food_cost_inr" (integer, estimated meal/snack cost during this slot, 0 if no meal)
+  - "accommodation_cost_inr" (integer, only for evening slot if overnight stay is relevant, 0 otherwise)
   - "travel_note" (string, how to get there or tips, max 1 sentence)
 - Morning activities should start around 8-9 AM, afternoon around 1-2 PM, evening around 6-7 PM. Times should flow naturally.
 - "budget_summary" has: "estimated_total" (int), "per_head" (int), "breakdown" (object with keys like "accommodation", "food", "transport", "activities" each as int)
