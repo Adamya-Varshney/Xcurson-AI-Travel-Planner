@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { addDays, format } from "date-fns";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -21,6 +21,8 @@ type ViewState = "setup" | "loading" | "view";
 const Itinerary = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefillCity = (location.state as any)?.prefillCity || null;
   const [viewState, setViewState] = useState<ViewState>("setup");
   const [isGenerating, setIsGenerating] = useState(false);
   const [itinerary, setItinerary] = useState<any>(null);
