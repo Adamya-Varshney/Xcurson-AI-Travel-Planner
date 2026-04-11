@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import Trips from "./pages/Trips";
+import TripDetail from "./pages/TripDetail";
 import Discover from "./pages/Discover";
 import Itinerary from "./pages/Itinerary";
 import NotFound from "./pages/NotFound";
