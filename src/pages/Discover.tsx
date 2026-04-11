@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useWishlist } from "@/hooks/useWishlist";
 import MoodCheckIn from "@/components/discovery/MoodCheckIn";
 import TripModeSwitcher from "@/components/discovery/TripModeSwitcher";
 import DestinationCard from "@/components/discovery/DestinationCard";
@@ -37,6 +38,7 @@ type DiscoverTab = "mood" | "vibe";
 
 const Discover = () => {
   const { user, signOut } = useAuth();
+  const { toggle: toggleWishlist, isWishlisted } = useWishlist();
   const [showMoodCheckIn, setShowMoodCheckIn] = useState(true);
   const [tripMode, setTripMode] = useState("solo");
   const [destinations, setDestinations] = useState<RankedDestination[]>([]);
@@ -249,6 +251,8 @@ const Discover = () => {
                       destination={dest}
                       rank={i}
                       onClick={() => setSelectedDest(dest)}
+                      isWishlisted={isWishlisted(dest.name)}
+                      onToggleWishlist={() => toggleWishlist(dest, "mood_match")}
                     />
                     <DestinationImageCarousel
                       images={destinationImages[dest.name] || []}
@@ -273,7 +277,11 @@ const Discover = () => {
             />
           </>
         ) : (
-          <VibeMatchTab onDestinationClick={(dest) => setSelectedDest(dest)} />
+          <VibeMatchTab
+            onDestinationClick={(dest) => setSelectedDest(dest)}
+            isWishlisted={isWishlisted}
+            onToggleWishlist={(dest) => toggleWishlist(dest, "vibe_match")}
+          />
         )}
       </main>
 
