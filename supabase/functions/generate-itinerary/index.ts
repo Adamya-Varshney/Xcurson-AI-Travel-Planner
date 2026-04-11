@@ -96,7 +96,7 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${t
           generationConfig: {
             responseMimeType: "application/json",
             temperature: 0.7,
-            maxOutputTokens: 4000,
+            maxOutputTokens: 8192,
           },
         }),
       }
@@ -117,6 +117,12 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${t
 
     const aiData = await aiResponse.json();
     const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const finishReason = aiData.candidates?.[0]?.finishReason || "";
+
+    if (!rawText || rawText.trim().length < 10) {
+      console.error("Empty or blocked AI response. finishReason:", finishReason, "rawText:", rawText);
+      return jsonResponse({ error: "The AI could not generate an itinerary for this destination. Try a different city or rephrasing.", code: "AI_EMPTY_RESPONSE" });
+    }
 
     let parsed: any;
     try {
