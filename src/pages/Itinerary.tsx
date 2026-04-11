@@ -43,8 +43,23 @@ const Itinerary = () => {
         body: { cities, days_count: daysCount, trip_mode: tripMode },
       });
 
-      if (error) throw new Error(error.message || "Generation failed");
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        throw new Error(error.message || "Generation failed");
+      }
+
+      if (data?.error) {
+        toast({
+          title: data.status === 402 ? "AI balance needed" : "Could not generate itinerary",
+          description: data.error,
+          variant: "destructive",
+        });
+        setViewState("setup");
+        return;
+      }
+
+      if (!data?.itinerary) {
+        throw new Error("No itinerary was returned.");
+      }
 
       setItinerary(data.itinerary);
       setViewState("view");

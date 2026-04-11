@@ -11,6 +11,12 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -19,10 +25,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing auth" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Missing auth" }, 401);
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -31,30 +34,22 @@ Deno.serve(async (req) => {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser(token);
+
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const body = await req.json();
     const { cities, days_count, trip_mode, trip_id } = body;
 
     if (!cities || !Array.isArray(cities) || cities.length === 0) {
-      return new Response(JSON.stringify({ error: "cities[] is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!days_count || days_count < 1 || days_count > 14) {
-      return new Response(JSON.stringify({ error: "days_count must be 1-14" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "cities[] is required" }, 400);
     }
 
-    // Fetch user profile for constraints
+    if (!days_count || days_count < 1 || days_count > 14) {
+      return jsonResponse({ error: "days_count must be 1-14" }, 400);
+    }
+
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("*")
@@ -115,18 +110,30 @@ Rules:
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error("AI error:", aiResponse.status, errText);
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "AI rate limit exceeded. Please try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+
       if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return jsonResponse({
+          error: "AI credits exhausted. Please add funds.",
+          code: "AI_CREDITS_EXHAUSTED",
+          status: 402,
+          fallback: false,
         });
       }
-      return new Response(JSON.stringify({ error: "AI generation failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+      if (aiResponse.status === 429) {
+        return jsonResponse({
+          error: "AI rate limit exceeded. Please try again in a moment.",
+          code: "AI_RATE_LIMITED",
+          status: 429,
+          fallback: false,
+        });
+      }
+
+      return jsonResponse({
+        error: "AI itinerary service is temporarily unavailable.",
+        code: "AI_UPSTREAM_FAILED",
+        status: aiResponse.status,
+        fallback: true,
       });
     }
 
@@ -146,8 +153,11 @@ Rules:
       parsed = JSON.parse(cleaned);
     } catch (e) {
       console.error("Failed to parse itinerary JSON:", e, content);
-      return new Response(JSON.stringify({ error: "Failed to parse generated itinerary" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return jsonResponse({
+        error: "Failed to parse generated itinerary.",
+        code: "AI_RESPONSE_PARSE_FAILED",
+        status: 500,
+        fallback: true,
       });
     }
 
@@ -156,7 +166,6 @@ Rules:
     const budgetSummary = parsed.budget_summary || {};
     const totalCost = budgetSummary.estimated_total || 0;
 
-    // Save to DB
     const { data: itinerary, error: insertError } = await supabase
       .from("itineraries")
       .insert({
@@ -175,20 +184,24 @@ Rules:
 
     if (insertError) {
       console.error("Insert error:", insertError);
-      return new Response(JSON.stringify({ error: "Failed to save itinerary" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return jsonResponse({
+        error: "Failed to save itinerary.",
+        code: "ITINERARY_SAVE_FAILED",
+        status: 500,
+        fallback: false,
       });
     }
 
     console.log("Itinerary generated and saved:", itinerary.id);
 
-    return new Response(JSON.stringify({ itinerary }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ itinerary });
   } catch (err: any) {
     console.error("generate-itinerary error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return jsonResponse({
+      error: err?.message || "Unexpected itinerary generation failure.",
+      code: "GENERATE_ITINERARY_FAILED",
+      status: 500,
+      fallback: true,
     });
   }
 });
