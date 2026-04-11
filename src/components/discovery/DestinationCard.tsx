@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, Eye, MapPin, Shield } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Eye, MapPin, Shield, Heart } from "lucide-react";
 
 interface DestinationCardProps {
   destination: {
@@ -20,6 +20,8 @@ interface DestinationCardProps {
   };
   rank: number;
   onClick: () => void;
+  isWishlisted?: boolean;
+  onToggleWishlist?: () => void;
 }
 
 const VISA_LABELS: Record<string, { label: string; color: string }> = {
@@ -42,7 +44,7 @@ const TrendIcon = ({ direction }: { direction?: string }) => {
   return <Minus className="w-3 h-3 text-muted-foreground" />;
 };
 
-const DestinationCard = ({ destination, rank, onClick }: DestinationCardProps) => {
+const DestinationCard = ({ destination, rank, onClick, isWishlisted, onToggleWishlist }: DestinationCardProps) => {
   const visa = VISA_LABELS[destination.visa_status_in || "required"];
   const crowdPercent = ((destination.crowd_level || 5) / 10) * 100;
   const freshnessPercent = destination.freshness_score || 50;
@@ -74,8 +76,18 @@ const DestinationCard = ({ destination, rank, onClick }: DestinationCardProps) =
           </p>
         </div>
 
-        {/* Fit score circle */}
-        <div className="relative w-12 h-12 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {onToggleWishlist && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleWishlist(); }}
+              className="p-1.5 rounded-full hover:bg-muted transition-colors"
+              aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+            >
+              <Heart className={`w-5 h-5 transition-colors ${isWishlisted ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+            </button>
+          )}
+          {/* Fit score circle */}
+          <div className="relative w-12 h-12">
           <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
             <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
             <circle
@@ -89,6 +101,7 @@ const DestinationCard = ({ destination, rank, onClick }: DestinationCardProps) =
           <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">
             {destination.fit_score}
           </span>
+          </div>
         </div>
       </div>
 

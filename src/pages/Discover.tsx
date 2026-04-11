@@ -13,6 +13,7 @@ import DestinationDetail from "@/components/discovery/DestinationDetail";
 import DestinationImageCarousel from "@/components/discovery/DestinationImageCarousel";
 import VibeMatchTab from "@/components/vibe/VibeMatchTab";
 import MoodHistory from "@/components/discovery/MoodHistory";
+import { useWishlist } from "@/hooks/useWishlist";
 
 interface RankedDestination {
   destination_id: string;
@@ -37,6 +38,7 @@ type DiscoverTab = "mood" | "vibe";
 
 const Discover = () => {
   const { user, signOut } = useAuth();
+  const { toggle: toggleWishlist, isWishlisted } = useWishlist();
   const [showMoodCheckIn, setShowMoodCheckIn] = useState(true);
   const [tripMode, setTripMode] = useState("solo");
   const [destinations, setDestinations] = useState<RankedDestination[]>([]);
@@ -249,6 +251,8 @@ const Discover = () => {
                       destination={dest}
                       rank={i}
                       onClick={() => setSelectedDest(dest)}
+                      isWishlisted={isWishlisted(dest.name)}
+                      onToggleWishlist={() => toggleWishlist(dest)}
                     />
                     <DestinationImageCarousel
                       images={destinationImages[dest.name] || []}
@@ -273,7 +277,11 @@ const Discover = () => {
             />
           </>
         ) : (
-          <VibeMatchTab onDestinationClick={(dest) => setSelectedDest(dest)} />
+          <VibeMatchTab
+            onDestinationClick={(dest) => setSelectedDest(dest)}
+            isWishlisted={isWishlisted}
+            onToggleWishlist={(dest) => toggleWishlist(dest)}
+          />
         )}
       </main>
 
