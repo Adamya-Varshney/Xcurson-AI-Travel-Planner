@@ -8,8 +8,8 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const GOOGLE_AI_KEY = Deno.env.get("GOOGLE_AI_STUDIO_API_KEY")!;
+const GEMINI_API = "https://generativelanguage.googleapis.com/v1beta/models";
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -24,20 +24,12 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return jsonResponse({ error: "Missing auth" }, 401);
-    }
+    if (!authHeader) return jsonResponse({ error: "Missing auth" }, 401);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
     const { cities, days_count, trip_mode, trip_id } = body;
@@ -45,23 +37,19 @@ Deno.serve(async (req) => {
     if (!cities || !Array.isArray(cities) || cities.length === 0) {
       return jsonResponse({ error: "cities[] is required" }, 400);
     }
-
     if (!days_count || days_count < 1 || days_count > 14) {
       return jsonResponse({ error: "days_count must be 1-14" }, 400);
     }
 
     const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+      .from("user_profiles").select("*").eq("user_id", user.id).maybeSingle();
 
     const dietary = (profile?.food_preferences as any)?.dietary || [];
     const interests = (profile?.experience_preferences as any)?.interests || [];
     const budgetRange = (profile?.place_preferences as any)?.budget_range || "mid";
     const pace = (profile?.place_preferences as any)?.travel_pace || "balanced";
 
-    const systemPrompt = `You are a travel itinerary generator. Generate a detailed day-by-day itinerary as strict JSON.
+    const prompt = `You are a travel itinerary generator. Generate a detailed day-by-day itinerary as strict JSON.
 
 Rules:
 - Output ONLY valid JSON, no markdown, no code fences.
@@ -83,82 +71,55 @@ Rules:
 - Respect the traveler's dietary restrictions: ${dietary.length > 0 ? dietary.join(", ") : "none specified"}.
 - Tailor to interests: ${interests.length > 0 ? interests.join(", ") : "general exploration"}.
 - Budget level: ${budgetRange}. Pace: ${pace}.
-- Trip mode: ${trip_mode || "solo"}.`;
+- Trip mode: ${trip_mode || "solo"}.
 
-    const userPrompt = `Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${trip_mode || "solo"}.`;
+Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${trip_mode || "solo"}.`;
 
     console.log("Generating itinerary for:", cities, days_count, trip_mode);
 
-    const aiResponse = await fetch(AI_GATEWAY, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
-      }),
-    });
+    const model = "gemini-2.5-pro-preview-05-06";
+    const aiResponse = await fetch(
+      `${GEMINI_API}/${model}:generateContent?key=${GOOGLE_AI_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.7,
+            maxOutputTokens: 4000,
+          },
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
-      console.error("AI error:", aiResponse.status, errText);
-
-      if (aiResponse.status === 402) {
-        return jsonResponse({
-          error: "AI credits exhausted. Please add funds.",
-          code: "AI_CREDITS_EXHAUSTED",
-          status: 402,
-          fallback: false,
-        });
-      }
+      console.error("Gemini API error:", aiResponse.status, errText);
 
       if (aiResponse.status === 429) {
-        return jsonResponse({
-          error: "AI rate limit exceeded. Please try again in a moment.",
-          code: "AI_RATE_LIMITED",
-          status: 429,
-          fallback: false,
-        });
+        return jsonResponse({ error: "Google AI rate limit exceeded. Please try again in a moment.", code: "AI_RATE_LIMITED" });
       }
-
-      return jsonResponse({
-        error: "AI itinerary service is temporarily unavailable.",
-        code: "AI_UPSTREAM_FAILED",
-        status: aiResponse.status,
-        fallback: true,
-      });
+      if (aiResponse.status === 403 || aiResponse.status === 401) {
+        return jsonResponse({ error: "Google AI API key is invalid or has insufficient permissions.", code: "AI_AUTH_FAILED" });
+      }
+      return jsonResponse({ error: "AI itinerary generation failed.", code: "AI_UPSTREAM_FAILED" });
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content || "";
+    const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     let parsed: any;
     try {
-      let cleaned = content
-        .replace(/```(?:json)?\s*/gi, "")
-        .replace(/```\s*/g, "")
-        .trim();
+      let cleaned = rawText.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonStart = cleaned.search(/\{/);
       const jsonEnd = cleaned.lastIndexOf("}");
       if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
-      cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
-      parsed = JSON.parse(cleaned);
+      parsed = JSON.parse(cleaned.slice(jsonStart, jsonEnd + 1));
     } catch (e) {
-      console.error("Failed to parse itinerary JSON:", e, content);
-      return jsonResponse({
-        error: "Failed to parse generated itinerary.",
-        code: "AI_RESPONSE_PARSE_FAILED",
-        status: 500,
-        fallback: true,
-      });
+      console.error("Failed to parse itinerary JSON:", e, rawText);
+      return jsonResponse({ error: "Failed to parse generated itinerary.", code: "AI_RESPONSE_PARSE_FAILED" });
     }
 
     const title = parsed.title || `${cities.join(" → ")} Trip`;
@@ -171,37 +132,23 @@ Rules:
       .insert({
         user_id: user.id,
         trip_id: trip_id || null,
-        title,
-        cities,
-        days_count,
+        title, cities, days_count,
         content: days,
         budget_summary: budgetSummary,
         generated_by: "gemini",
         total_est_cost_inr: totalCost,
       })
-      .select()
-      .single();
+      .select().single();
 
     if (insertError) {
       console.error("Insert error:", insertError);
-      return jsonResponse({
-        error: "Failed to save itinerary.",
-        code: "ITINERARY_SAVE_FAILED",
-        status: 500,
-        fallback: false,
-      });
+      return jsonResponse({ error: "Failed to save itinerary.", code: "SAVE_FAILED" });
     }
 
     console.log("Itinerary generated and saved:", itinerary.id);
-
     return jsonResponse({ itinerary });
   } catch (err: any) {
     console.error("generate-itinerary error:", err);
-    return jsonResponse({
-      error: err?.message || "Unexpected itinerary generation failure.",
-      code: "GENERATE_ITINERARY_FAILED",
-      status: 500,
-      fallback: true,
-    });
+    return jsonResponse({ error: err?.message || "Unexpected failure.", code: "GENERATE_FAILED" });
   }
 });
