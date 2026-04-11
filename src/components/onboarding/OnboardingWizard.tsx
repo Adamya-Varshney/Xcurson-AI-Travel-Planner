@@ -15,6 +15,9 @@ import StepPastTrips from "./steps/StepPastTrips";
 
 export interface OnboardingData {
   fullName: string;
+  age: string;
+  gender: string;
+  languages: string[];
   travelStyle: string[];
   travelPace: string;
   homeCity: string;
@@ -26,6 +29,9 @@ export interface OnboardingData {
   culturalPrefs: string[];
   pastDestinations: string[];
   travelFrequency: string;
+  preferredAccommodation: string[];
+  mobilityNeeds: string[];
+  travelCompanions: string[];
 }
 
 const STEPS = [
@@ -45,6 +51,9 @@ const OnboardingWizard = () => {
 
   const [data, setData] = useState<OnboardingData>({
     fullName: "",
+    age: "",
+    gender: "",
+    languages: [],
     travelStyle: [],
     travelPace: "balanced",
     homeCity: "",
@@ -56,6 +65,9 @@ const OnboardingWizard = () => {
     culturalPrefs: [],
     pastDestinations: [],
     travelFrequency: "once_a_year",
+    preferredAccommodation: [],
+    mobilityNeeds: [],
+    travelCompanions: [],
   });
 
   const updateData = (updates: Partial<OnboardingData>) => {
@@ -77,11 +89,17 @@ const OnboardingWizard = () => {
         place_preferences: {
           budget_range: data.budgetRange,
           travel_pace: data.travelPace,
+          preferred_accommodation: data.preferredAccommodation,
         },
         experience_preferences: {
           travel_style: data.travelStyle,
           travel_frequency: data.travelFrequency,
           interests: data.interests,
+          travel_companions: data.travelCompanions,
+          age: data.age,
+          gender: data.gender,
+          languages: data.languages,
+          mobility_needs: data.mobilityNeeds,
         },
         cultural_preferences: {
           preferences: data.culturalPrefs,
@@ -134,7 +152,6 @@ const OnboardingWizard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header with progress and logout */}
       <div className="px-6 pt-5 pb-2">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -169,7 +186,6 @@ const OnboardingWizard = () => {
         </div>
       </div>
 
-      {/* Step content */}
       <div className="flex-1 px-6 py-6 max-w-lg mx-auto w-full overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
@@ -188,7 +204,6 @@ const OnboardingWizard = () => {
         </AnimatePresence>
       </div>
 
-      {/* Navigation */}
       <div className="px-6 pb-6 pt-2 max-w-lg mx-auto w-full">
         <div className="flex gap-3">
           {step > 0 && (

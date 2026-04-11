@@ -30,6 +30,32 @@ const BUDGET_LABELS = ["Budget", "Mid-range", "Premium", "Luxury"];
 const BUDGET_MAP: Record<number, string> = { 0: "budget", 1: "mid", 2: "premium", 3: "luxury" };
 const BUDGET_REVERSE: Record<string, number> = { budget: 0, mid: 1, premium: 2, luxury: 3 };
 
+const ACCOMMODATION = [
+  { label: "Hotels", icon: "🏨" },
+  { label: "Hostels", icon: "🛏️" },
+  { label: "Airbnb", icon: "🏠" },
+  { label: "Resorts", icon: "🏖️" },
+  { label: "Camping", icon: "⛺" },
+  { label: "Homestays", icon: "🏡" },
+  { label: "Boutique", icon: "✨" },
+];
+
+const COMPANIONS = [
+  { label: "Solo", icon: "🧑" },
+  { label: "Partner", icon: "💑" },
+  { label: "Friends", icon: "👯" },
+  { label: "Family", icon: "👨‍👩‍👧‍👦" },
+  { label: "Group tour", icon: "🚌" },
+];
+
+const MOBILITY = [
+  { label: "No special needs", icon: "✅" },
+  { label: "Wheelchair access", icon: "♿" },
+  { label: "Limited walking", icon: "🦯" },
+  { label: "Elevator needed", icon: "🛗" },
+  { label: "Senior-friendly", icon: "👴" },
+];
+
 const StepHowYouTravel = ({ data, onChange }: Props) => {
   const budgetIdx = BUDGET_REVERSE[data.budgetRange] ?? 1;
 
@@ -80,6 +106,39 @@ const StepHowYouTravel = ({ data, onChange }: Props) => {
             ))}
           </div>
         </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-foreground mb-3 block">
+          Preferred accommodation <span className="text-muted-foreground font-normal">(optional)</span>
+        </label>
+        <ChipSelector
+          options={ACCOMMODATION}
+          selected={data.preferredAccommodation}
+          onChange={(s) => onChange({ preferredAccommodation: s })}
+        />
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-foreground mb-3 block">
+          Usually travel with <span className="text-muted-foreground font-normal">(optional)</span>
+        </label>
+        <ChipSelector
+          options={COMPANIONS}
+          selected={data.travelCompanions}
+          onChange={(s) => onChange({ travelCompanions: s })}
+        />
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-foreground mb-3 block">
+          Mobility / accessibility <span className="text-muted-foreground font-normal">(optional)</span>
+        </label>
+        <ChipSelector
+          options={MOBILITY}
+          selected={data.mobilityNeeds}
+          onChange={(s) => onChange({ mobilityNeeds: s })}
+        />
       </div>
     </div>
   );
