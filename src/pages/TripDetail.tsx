@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, List, BarChart3, MapPin, Calendar } from "lucide-react";
 import DayView from "@/components/itinerary/DayView";
 import ItinerarySummary from "@/components/itinerary/ItinerarySummary";
+import ExpenseCalculator from "@/components/itinerary/ExpenseCalculator";
 import type { Activity } from "@/components/itinerary/TimeBlockCard";
 
 const TripDetail = () => {
@@ -111,7 +112,7 @@ const TripDetail = () => {
               ))}
             </TabsContent>
 
-            <TabsContent value="summary">
+            <TabsContent value="summary" className="space-y-4">
               <ItinerarySummary
                 title={itinerary.title}
                 cities={itinerary.cities}
@@ -119,6 +120,7 @@ const TripDetail = () => {
                 totalCost={itinerary.total_est_cost_inr}
                 budgetSummary={itinerary.budget_summary as any}
               />
+              <ExpenseCalculator />
             </TabsContent>
           </Tabs>
         )}
