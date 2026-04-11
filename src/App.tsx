@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import Trips from "./pages/Trips";
+import TripDetail from "./pages/TripDetail";
 import Discover from "./pages/Discover";
 import Itinerary from "./pages/Itinerary";
 import NotFound from "./pages/NotFound";
@@ -28,6 +29,7 @@ const AppRoutes = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/discover" element={<Discover />} />
           <Route path="/trips" element={<Trips />} />
+          <Route path="/trips/:tripId" element={<TripDetail />} />
           <Route path="/itinerary" element={<Itinerary />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
