@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { addDays, format } from "date-fns";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -21,6 +21,8 @@ type ViewState = "setup" | "loading" | "view";
 const Itinerary = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefillDestination = searchParams.get("destination") || "";
   const [viewState, setViewState] = useState<ViewState>("setup");
   const [isGenerating, setIsGenerating] = useState(false);
   const [itinerary, setItinerary] = useState<any>(null);
@@ -192,7 +194,7 @@ const Itinerary = () => {
 
       <main className="max-w-lg mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {viewState === "setup" && (
-          <ItinerarySetup onGenerate={handleGenerate} isGenerating={isGenerating} />
+          <ItinerarySetup onGenerate={handleGenerate} isGenerating={isGenerating} prefillCity={prefillDestination} />
         )}
 
         {viewState === "loading" && (
