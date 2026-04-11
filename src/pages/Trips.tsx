@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, MapPin, Calendar } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Calendar, History, Plane } from "lucide-react";
 import { Link } from "react-router-dom";
 import ChipSelector from "@/components/onboarding/ChipSelector";
 
@@ -35,16 +35,15 @@ const Trips = () => {
     }
   };
 
-  const planningTrips = trips.filter((t) => t.status === "planning");
-  const bookedTrips = trips.filter((t) => t.status === "booked");
+  const upcomingTrips = trips.filter((t) => t.status === "planning" || t.status === "booked");
   const completedTrips = trips.filter((t) => t.status === "completed");
 
-  const renderTrips = (list: typeof trips) => {
+  const renderTrips = (list: typeof trips, emptyIcon: React.ReactNode, emptyText: string) => {
     if (list.length === 0) {
       return (
         <div className="text-center py-12 text-muted-foreground">
-          <MapPin className="w-10 h-10 mx-auto mb-2 opacity-50" />
-          <p>No trips here yet</p>
+          {emptyIcon}
+          <p>{emptyText}</p>
         </div>
       );
     }
@@ -67,7 +66,12 @@ const Trips = () => {
                     </p>
                   )}
                 </div>
-                <Badge variant="outline" className="capitalize">{trip.trip_mode}</Badge>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge variant="outline" className="capitalize">{trip.trip_mode}</Badge>
+                  <Badge variant={trip.status === "booked" ? "default" : "secondary"} className="capitalize text-xs">
+                    {trip.status}
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -110,15 +114,29 @@ const Trips = () => {
       </header>
 
       <main className="max-w-lg mx-auto px-6 py-6">
-        <Tabs defaultValue="planning">
+        <Tabs defaultValue="upcoming">
           <TabsList className="w-full">
-            <TabsTrigger value="planning" className="flex-1">Planning ({planningTrips.length})</TabsTrigger>
-            <TabsTrigger value="booked" className="flex-1">Booked ({bookedTrips.length})</TabsTrigger>
-            <TabsTrigger value="completed" className="flex-1">Done ({completedTrips.length})</TabsTrigger>
+            <TabsTrigger value="upcoming" className="flex-1 gap-1">
+              <Plane className="w-4 h-4" /> Upcoming ({upcomingTrips.length})
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1 gap-1">
+              <History className="w-4 h-4" /> History ({completedTrips.length})
+            </TabsTrigger>
           </TabsList>
-          <TabsContent value="planning" className="mt-4">{renderTrips(planningTrips)}</TabsContent>
-          <TabsContent value="booked" className="mt-4">{renderTrips(bookedTrips)}</TabsContent>
-          <TabsContent value="completed" className="mt-4">{renderTrips(completedTrips)}</TabsContent>
+          <TabsContent value="upcoming" className="mt-4">
+            {renderTrips(
+              upcomingTrips,
+              <Plane className="w-10 h-10 mx-auto mb-2 opacity-50" />,
+              "No upcoming trips yet"
+            )}
+          </TabsContent>
+          <TabsContent value="history" className="mt-4">
+            {renderTrips(
+              completedTrips,
+              <History className="w-10 h-10 mx-auto mb-2 opacity-50" />,
+              "No past trips yet. Confirmed itineraries will appear here once completed."
+            )}
+          </TabsContent>
         </Tabs>
       </main>
     </div>
