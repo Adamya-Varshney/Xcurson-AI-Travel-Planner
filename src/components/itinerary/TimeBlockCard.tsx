@@ -9,6 +9,8 @@ import { Pencil, RefreshCw, Check, X, Clock, IndianRupee } from "lucide-react";
 export interface Activity {
   activity: string;
   description: string;
+  start_time?: string;
+  end_time?: string;
   duration_hrs: number;
   cost_inr: number;
   travel_note: string;

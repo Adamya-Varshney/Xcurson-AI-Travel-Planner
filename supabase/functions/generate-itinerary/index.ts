@@ -64,9 +64,12 @@ Rules:
 - Each activity object has:
   - "activity" (string, short name)
   - "description" (string, 1-2 sentences)
+  - "start_time" (string, e.g. "09:00 AM")
+  - "end_time" (string, e.g. "12:00 PM")
   - "duration_hrs" (number, e.g. 2.5)
   - "cost_inr" (integer, estimated cost in INR)
   - "travel_note" (string, how to get there or tips, max 1 sentence)
+- Morning activities should start around 8-9 AM, afternoon around 1-2 PM, evening around 6-7 PM. Times should flow naturally.
 - "budget_summary" has: "estimated_total" (int), "per_head" (int), "breakdown" (object with keys like "accommodation", "food", "transport", "activities" each as int)
 - Respect the traveler's dietary restrictions: ${dietary.length > 0 ? dietary.join(", ") : "none specified"}.
 - Tailor to interests: ${interests.length > 0 ? interests.join(", ") : "general exploration"}.
