@@ -12,6 +12,7 @@ import ItinerarySummary from "@/components/itinerary/ItinerarySummary";
 import AIEditBar from "@/components/itinerary/AIEditBar";
 import ResuggestModal from "@/components/itinerary/ResuggestModal";
 import ConfirmItineraryBar from "@/components/itinerary/ConfirmItineraryBar";
+import ExpenseCalculator from "@/components/itinerary/ExpenseCalculator";
 import type { Activity } from "@/components/itinerary/TimeBlockCard";
 
 type ViewState = "setup" | "loading" | "view";
@@ -215,7 +216,7 @@ const Itinerary = () => {
                 ))}
               </TabsContent>
 
-              <TabsContent value="summary">
+              <TabsContent value="summary" className="space-y-4">
                 <ItinerarySummary
                   title={itinerary.title}
                   cities={itinerary.cities}
@@ -223,6 +224,7 @@ const Itinerary = () => {
                   totalCost={itinerary.total_est_cost_inr}
                   budgetSummary={itinerary.budget_summary as any}
                 />
+                <ExpenseCalculator />
               </TabsContent>
             </Tabs>
 
