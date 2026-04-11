@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { addDays, format } from "date-fns";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -138,6 +139,11 @@ const Itinerary = () => {
     if (!itinerary || !user) return;
 
     try {
+      const startDateStr = tripStartDate ? format(tripStartDate, "yyyy-MM-dd") : null;
+      const endDateStr = tripStartDate && itinerary.days_count
+        ? format(addDays(tripStartDate, itinerary.days_count - 1), "yyyy-MM-dd")
+        : null;
+
       const { data: trip, error: tripError } = await supabase
         .from("trips")
         .insert({
@@ -146,6 +152,8 @@ const Itinerary = () => {
           destination: itinerary.cities?.join(", ") || "",
           trip_mode: "solo",
           status: "booked",
+          start_date: startDateStr,
+          end_date: endDateStr,
         })
         .select()
         .single();
