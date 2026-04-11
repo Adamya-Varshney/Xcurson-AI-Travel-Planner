@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -11,21 +11,22 @@ import DayView from "@/components/itinerary/DayView";
 import ItinerarySummary from "@/components/itinerary/ItinerarySummary";
 import AIEditBar from "@/components/itinerary/AIEditBar";
 import ResuggestModal from "@/components/itinerary/ResuggestModal";
+import ConfirmItineraryBar from "@/components/itinerary/ConfirmItineraryBar";
 import type { Activity } from "@/components/itinerary/TimeBlockCard";
 
 type ViewState = "setup" | "loading" | "view";
 
 const Itinerary = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [viewState, setViewState] = useState<ViewState>("setup");
   const [isGenerating, setIsGenerating] = useState(false);
   const [itinerary, setItinerary] = useState<any>(null);
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
-  // AI edit state
   const [isEditing, setIsEditing] = useState(false);
   const [changeSummary, setChangeSummary] = useState<string | null>(null);
 
-  // Re-suggest state
   const [resuggestingSlot, setResuggestingSlot] = useState<string | null>(null);
   const [resuggestData, setResuggestData] = useState<{
     dayNumber: number;
@@ -37,15 +38,14 @@ const Itinerary = () => {
     if (!user) return;
     setIsGenerating(true);
     setViewState("loading");
+    setIsConfirmed(false);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-itinerary", {
         body: { cities, days_count: daysCount, trip_mode: tripMode },
       });
 
-      if (error) {
-        throw new Error(error.message || "Generation failed");
-      }
+      if (error) throw new Error(error.message || "Generation failed");
 
       if (data?.error) {
         toast({
@@ -57,9 +57,7 @@ const Itinerary = () => {
         return;
       }
 
-      if (!data?.itinerary) {
-        throw new Error("No itinerary was returned.");
-      }
+      if (!data?.itinerary) throw new Error("No itinerary was returned.");
 
       setItinerary(data.itinerary);
       setViewState("view");
@@ -76,9 +74,7 @@ const Itinerary = () => {
   const handleUpdateSlot = useCallback((dayNumber: number, slot: "morning" | "afternoon" | "evening", activity: Activity) => {
     if (!itinerary) return;
     const updatedContent = (itinerary.content as any[]).map((day: any) => {
-      if (day.day_number === dayNumber) {
-        return { ...day, [slot]: activity };
-      }
+      if (day.day_number === dayNumber) return { ...day, [slot]: activity };
       return day;
     });
     setItinerary({ ...itinerary, content: updatedContent, is_user_edited: true });
@@ -93,15 +89,10 @@ const Itinerary = () => {
       const { data, error } = await supabase.functions.invoke("resuggest-slot", {
         body: { itinerary_id: itinerary.id, day_number: dayNumber, time_slot: slot },
       });
-
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
-      setResuggestData({
-        dayNumber,
-        timeSlot: slot,
-        alternatives: data.alternatives || [],
-      });
+      setResuggestData({ dayNumber, timeSlot: slot, alternatives: data.alternatives || [] });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -125,14 +116,12 @@ const Itinerary = () => {
       const { data, error } = await supabase.functions.invoke("edit-itinerary", {
         body: { itinerary_id: itinerary.id, edit_instruction: instruction },
       });
-
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
       setItinerary(data.itinerary);
       setChangeSummary(data.change_summary || "Itinerary updated.");
       toast({ title: "Itinerary updated! ✏️" });
-
       setTimeout(() => setChangeSummary(null), 5000);
     } catch (e: any) {
       toast({ title: "Edit failed", description: e.message, variant: "destructive" });
@@ -140,6 +129,41 @@ const Itinerary = () => {
       setIsEditing(false);
     }
   }, [itinerary]);
+
+  const handleConfirmItinerary = useCallback(async () => {
+    if (!itinerary || !user) return;
+
+    try {
+      const { data: trip, error: tripError } = await supabase
+        .from("trips")
+        .insert({
+          user_id: user.id,
+          title: itinerary.title,
+          destination: itinerary.cities?.join(", ") || "",
+          trip_mode: "solo",
+          status: "booked",
+        })
+        .select()
+        .single();
+
+      if (tripError) throw tripError;
+
+      const { error: linkError } = await supabase
+        .from("itineraries")
+        .update({ trip_id: trip.id })
+        .eq("id", itinerary.id);
+
+      if (linkError) throw linkError;
+
+      setIsConfirmed(true);
+      setItinerary({ ...itinerary, trip_id: trip.id });
+      toast({ title: "Trip confirmed! 🎉", description: "Added to your upcoming trips." });
+
+      setTimeout(() => navigate("/trips"), 2000);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  }, [itinerary, user, navigate]);
 
   const days = (itinerary?.content as any[]) || [];
 
@@ -168,7 +192,7 @@ const Itinerary = () => {
         )}
 
         {viewState === "view" && itinerary && (
-          <div className="pb-24">
+          <div className="pb-32">
             <Tabs defaultValue="days">
               <TabsList className="w-full mb-4">
                 <TabsTrigger value="days" className="flex-1 gap-1">
@@ -202,10 +226,17 @@ const Itinerary = () => {
               </TabsContent>
             </Tabs>
 
-            <AIEditBar
-              onSubmit={handleAIEdit}
-              isEditing={isEditing}
-              changeSummary={changeSummary}
+            {!isConfirmed && (
+              <AIEditBar
+                onSubmit={handleAIEdit}
+                isEditing={isEditing}
+                changeSummary={changeSummary}
+              />
+            )}
+
+            <ConfirmItineraryBar
+              onConfirm={handleConfirmItinerary}
+              isConfirmed={isConfirmed}
             />
 
             {resuggestData && (
