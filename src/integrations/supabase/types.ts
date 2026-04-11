@@ -366,6 +366,51 @@ export type Database = {
         }
         Relationships: []
       }
+      wishlist: {
+        Row: {
+          budget_level: string | null
+          country: string
+          created_at: string
+          description: string | null
+          destination_name: string
+          experience_tags: string[] | null
+          fit_score: number | null
+          id: string
+          match_reason: string | null
+          region: string | null
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          budget_level?: string | null
+          country: string
+          created_at?: string
+          description?: string | null
+          destination_name: string
+          experience_tags?: string[] | null
+          fit_score?: number | null
+          id?: string
+          match_reason?: string | null
+          region?: string | null
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          budget_level?: string | null
+          country?: string
+          created_at?: string
+          description?: string | null
+          destination_name?: string
+          experience_tags?: string[] | null
+          fit_score?: number | null
+          id?: string
+          match_reason?: string | null
+          region?: string | null
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

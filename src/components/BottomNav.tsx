@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Compass, Home, Luggage, User, CalendarDays } from "lucide-react";
+import { Compass, Home, Luggage, User, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/discover", icon: Compass, label: "Discover" },
-  { to: "/itinerary", icon: CalendarDays, label: "Itinerary" },
+  { to: "/wishlist", icon: Heart, label: "Wishlist" },
   { to: "/trips", icon: Luggage, label: "Trips" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
