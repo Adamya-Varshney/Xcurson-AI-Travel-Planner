@@ -14,8 +14,8 @@ const BottomNav = () => {
   const { pathname } = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[60] border-t border-border bg-background/95 backdrop-blur-md safe-area-bottom">
-      <div className="max-w-lg mx-auto flex items-center justify-around py-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-[60] border-t border-border bg-background/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
+      <div className="max-w-lg mx-auto flex items-center justify-around py-1.5 sm:py-2">
         {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
           const isActive = to === "/" ? pathname === "/" : pathname.startsWith(to);
           return (
@@ -23,14 +23,14 @@ const BottomNav = () => {
               key={to}
               to={to}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors",
+                "flex flex-col items-center gap-0.5 px-2 sm:px-3 py-1 rounded-lg transition-colors min-w-0",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")} />
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[9px] sm:text-[10px] font-medium truncate">{label}</span>
             </Link>
           );
         })}

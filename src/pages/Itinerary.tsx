@@ -180,42 +180,42 @@ const Itinerary = () => {
   const days = (itinerary?.content as any[]) || [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="px-6 py-4 flex items-center gap-3 border-b border-border">
+    <div className="min-h-screen bg-background pb-20">
+      <header className="px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-3 border-b border-border">
         <Link to="/trips">
-          <Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9"><ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
         </Link>
-        <h1 className="text-lg font-display font-bold text-foreground">
+        <h1 className="text-base sm:text-lg font-display font-bold text-foreground truncate">
           {viewState === "view" ? itinerary?.title || "Itinerary" : "Create Itinerary"}
         </h1>
       </header>
 
-      <main className="max-w-lg mx-auto px-6 py-6">
+      <main className="max-w-lg mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {viewState === "setup" && (
           <ItinerarySetup onGenerate={handleGenerate} isGenerating={isGenerating} />
         )}
 
         {viewState === "loading" && (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <div className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-muted-foreground font-medium">Crafting your itinerary...</p>
+          <div className="flex flex-col items-center justify-center py-16 sm:py-20 space-y-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <p className="text-muted-foreground font-medium text-sm sm:text-base">Crafting your itinerary...</p>
             <p className="text-xs text-muted-foreground/60">This may take a moment</p>
           </div>
         )}
 
         {viewState === "view" && itinerary && (
-          <div className="pb-32">
+          <div className="pb-36 sm:pb-32">
             <Tabs defaultValue="days">
-              <TabsList className="w-full mb-4">
-                <TabsTrigger value="days" className="flex-1 gap-1">
-                  <List className="w-4 h-4" /> Day by Day
+              <TabsList className="w-full mb-3 sm:mb-4">
+                <TabsTrigger value="days" className="flex-1 gap-1 text-xs sm:text-sm">
+                  <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Day by Day
                 </TabsTrigger>
-                <TabsTrigger value="summary" className="flex-1 gap-1">
-                  <BarChart3 className="w-4 h-4" /> Summary
+                <TabsTrigger value="summary" className="flex-1 gap-1 text-xs sm:text-sm">
+                  <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Summary
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="days" className="space-y-6">
+              <TabsContent value="days" className="space-y-4 sm:space-y-6">
                 {days.map((day: any) => (
                   <DayView
                     key={day.day_number}
@@ -228,7 +228,7 @@ const Itinerary = () => {
                 ))}
               </TabsContent>
 
-              <TabsContent value="summary" className="space-y-4">
+              <TabsContent value="summary" className="space-y-3 sm:space-y-4">
                 <ItinerarySummary
                   title={itinerary.title}
                   cities={itinerary.cities}
