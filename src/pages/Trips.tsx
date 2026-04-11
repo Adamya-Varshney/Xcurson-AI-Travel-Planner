@@ -50,7 +50,8 @@ const Trips = () => {
     return (
       <div className="space-y-3">
         {list.map((trip) => (
-          <Card key={trip.id} className="border-0 shadow-sm">
+          <Link key={trip.id} to={`/trips/${trip.id}`}>
+          <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div>
@@ -75,6 +76,7 @@ const Trips = () => {
               </div>
             </CardContent>
           </Card>
+          </Link>
         ))}
       </div>
     );
