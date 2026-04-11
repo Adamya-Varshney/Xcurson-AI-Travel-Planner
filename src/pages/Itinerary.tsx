@@ -220,6 +220,7 @@ const Itinerary = () => {
                   <DayView
                     key={day.day_number}
                     day={day}
+                    startDate={tripStartDate ? tripStartDate.toISOString().split("T")[0] : null}
                     onUpdateSlot={handleUpdateSlot}
                     onResuggestSlot={handleResuggestSlot}
                     resuggestingSlot={resuggestingSlot}

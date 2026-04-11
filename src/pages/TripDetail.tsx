@@ -105,6 +105,7 @@ const TripDetail = () => {
                 <DayView
                   key={day.day_number}
                   day={day}
+                  startDate={trip.start_date}
                   onUpdateSlot={() => {}}
                   onResuggestSlot={() => {}}
                   resuggestingSlot={null}
