@@ -35,15 +35,18 @@ const Itinerary = () => {
     alternatives: Activity[];
   } | null>(null);
 
-  const handleGenerate = useCallback(async (cities: string[], daysCount: number, tripMode: string) => {
+  const [tripStartDate, setTripStartDate] = useState<Date | null>(null);
+
+  const handleGenerate = useCallback(async (cities: string[], daysCount: number, tripMode: string, startDate: Date) => {
     if (!user) return;
     setIsGenerating(true);
     setViewState("loading");
     setIsConfirmed(false);
+    setTripStartDate(startDate);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-itinerary", {
-        body: { cities, days_count: daysCount, trip_mode: tripMode },
+        body: { cities, days_count: daysCount, trip_mode: tripMode, start_date: startDate.toISOString().split("T")[0] },
       });
 
       if (error) throw new Error(error.message || "Generation failed");
