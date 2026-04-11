@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Minus, Eye, MapPin, Shield } from "lucide-react";
+import WishlistHeart from "@/components/WishlistHeart";
 
 interface DestinationCardProps {
   destination: {
+
     destination_id: string;
     name: string;
     country: string;
@@ -20,6 +22,8 @@ interface DestinationCardProps {
   };
   rank: number;
   onClick: () => void;
+  isWishlisted?: boolean;
+  onToggleWishlist?: () => void;
 }
 
 const VISA_LABELS: Record<string, { label: string; color: string }> = {
@@ -42,7 +46,7 @@ const TrendIcon = ({ direction }: { direction?: string }) => {
   return <Minus className="w-3 h-3 text-muted-foreground" />;
 };
 
-const DestinationCard = ({ destination, rank, onClick }: DestinationCardProps) => {
+const DestinationCard = ({ destination, rank, onClick, isWishlisted, onToggleWishlist }: DestinationCardProps) => {
   const visa = VISA_LABELS[destination.visa_status_in || "required"];
   const crowdPercent = ((destination.crowd_level || 5) / 10) * 100;
   const freshnessPercent = destination.freshness_score || 50;
@@ -74,8 +78,12 @@ const DestinationCard = ({ destination, rank, onClick }: DestinationCardProps) =
           </p>
         </div>
 
-        {/* Fit score circle */}
-        <div className="relative w-12 h-12 flex-shrink-0">
+        {/* Wishlist + Fit score */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {onToggleWishlist && (
+            <WishlistHeart isWishlisted={!!isWishlisted} onClick={() => onToggleWishlist()} />
+          )}
+          <div className="relative w-12 h-12">
           <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
             <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
             <circle
@@ -86,9 +94,10 @@ const DestinationCard = ({ destination, rank, onClick }: DestinationCardProps) =
               strokeLinecap="round"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">
-            {destination.fit_score}
-          </span>
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">
+              {destination.fit_score}
+            </span>
+          </div>
         </div>
       </div>
 
