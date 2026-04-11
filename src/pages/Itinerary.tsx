@@ -194,7 +194,7 @@ const Itinerary = () => {
 
       <main className="max-w-lg mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {viewState === "setup" && (
-          <ItinerarySetup onGenerate={handleGenerate} isGenerating={isGenerating} />
+          <ItinerarySetup onGenerate={handleGenerate} isGenerating={isGenerating} prefillCity={prefillCity} />
         )}
 
         {viewState === "loading" && (
