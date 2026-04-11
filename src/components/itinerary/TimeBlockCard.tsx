@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, RefreshCw, Check, X, Clock, IndianRupee, Car, UtensilsCrossed, BedDouble } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pencil, RefreshCw, Check, X, Clock, IndianRupee, Car, UtensilsCrossed, BedDouble, Navigation } from "lucide-react";
 
 export interface Activity {
   activity: string;
@@ -17,7 +18,13 @@ export interface Activity {
   food_cost_inr?: number;
   accommodation_cost_inr?: number;
   travel_note: string;
+  transport_mode?: string;
 }
+
+const TRANSPORT_MODES = [
+  "Walk", "Auto/Rickshaw", "Taxi/Cab", "Metro", "Bus", "Train",
+  "Bicycle", "Motorbike/Scooter", "Private Car", "Ferry/Boat", "Flight", "Other",
+];
 
 interface TimeBlockCardProps {
   timeSlot: "morning" | "afternoon" | "evening";
@@ -112,6 +119,23 @@ const TimeBlockCard = ({ timeSlot, activity, onUpdate, onResuggest, isResuggesti
               />
             </div>
           </div>
+          {/* Transport mode */}
+          <div>
+            <label className="text-xs text-muted-foreground">Mode of Transport</label>
+            <Select
+              value={draft.transport_mode || ""}
+              onValueChange={(val) => setDraft({ ...draft, transport_mode: val })}
+            >
+              <SelectTrigger className="text-sm">
+                <SelectValue placeholder="Select transport" />
+              </SelectTrigger>
+              <SelectContent>
+                {TRANSPORT_MODES.map((mode) => (
+                  <SelectItem key={mode} value={mode}>{mode}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {/* Costs breakdown */}
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -194,8 +218,12 @@ const TimeBlockCard = ({ timeSlot, activity, onUpdate, onResuggest, isResuggesti
           <span className="flex items-center gap-1">
             <IndianRupee className="w-3 h-3" /> {totalSlotCost.toLocaleString("en-IN")}
           </span>
+          {activity.transport_mode && (
+            <span className="flex items-center gap-1">
+              <Navigation className="w-3 h-3" /> {activity.transport_mode}
+            </span>
+          )}
         </div>
-        {/* Detailed cost breakdown if sub-costs exist */}
         {(activity.commute_cost_inr || activity.food_cost_inr || activity.accommodation_cost_inr) ? (
           <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground/60 flex-wrap">
             {activity.commute_cost_inr ? (
@@ -221,7 +249,7 @@ const TimeBlockCard = ({ timeSlot, activity, onUpdate, onResuggest, isResuggesti
 function convertTo24h(time12h: string): string {
   if (!time12h) return "";
   const match = time12h.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return time12h; // already 24h or unknown
+  if (!match) return time12h;
   let [, h, m, period] = match;
   let hours = parseInt(h);
   if (period.toUpperCase() === "PM" && hours !== 12) hours += 12;

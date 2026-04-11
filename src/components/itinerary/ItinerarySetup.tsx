@@ -1,12 +1,16 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import ChipSelector from "@/components/onboarding/ChipSelector";
-import { MapPin, Plus, Minus, X, Sparkles } from "lucide-react";
+import { MapPin, Plus, Minus, X, Sparkles, CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ItinerarySetupProps {
-  onGenerate: (cities: string[], daysCount: number, tripMode: string) => void;
+  onGenerate: (cities: string[], daysCount: number, tripMode: string, startDate: Date) => void;
   isGenerating: boolean;
 }
 
@@ -15,6 +19,7 @@ const ItinerarySetup = ({ onGenerate, isGenerating }: ItinerarySetupProps) => {
   const [cities, setCities] = useState<string[]>([]);
   const [daysCount, setDaysCount] = useState(3);
   const [tripMode, setTripMode] = useState("solo");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
 
   const addCity = () => {
     const trimmed = cityInput.trim();
@@ -34,6 +39,8 @@ const ItinerarySetup = ({ onGenerate, isGenerating }: ItinerarySetupProps) => {
       addCity();
     }
   };
+
+  const canGenerate = cities.length > 0 && !!startDate;
 
   return (
     <div className="space-y-6">
@@ -77,6 +84,37 @@ const ItinerarySetup = ({ onGenerate, isGenerating }: ItinerarySetupProps) => {
         )}
       </div>
 
+      {/* Start date picker */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground">
+          Start date <span className="text-destructive">*</span>
+        </label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !startDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {startDate ? format(startDate, "PPP") : "Pick a start date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={startDate}
+              onSelect={setStartDate}
+              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
       {/* Duration stepper */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">Duration</label>
@@ -117,8 +155,8 @@ const ItinerarySetup = ({ onGenerate, isGenerating }: ItinerarySetupProps) => {
 
       {/* Generate button */}
       <Button
-        onClick={() => onGenerate(cities, daysCount, tripMode)}
-        disabled={isGenerating || cities.length === 0}
+        onClick={() => startDate && onGenerate(cities, daysCount, tripMode, startDate)}
+        disabled={isGenerating || !canGenerate}
         className="w-full gradient-primary border-0 h-12 text-base font-semibold"
       >
         {isGenerating ? (
@@ -133,6 +171,9 @@ const ItinerarySetup = ({ onGenerate, isGenerating }: ItinerarySetupProps) => {
           </span>
         )}
       </Button>
+      {!startDate && cities.length > 0 && (
+        <p className="text-xs text-destructive text-center">Please select a start date to continue</p>
+      )}
     </div>
   );
 };

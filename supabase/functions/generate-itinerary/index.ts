@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
-    const { cities, days_count, trip_mode, trip_id } = body;
+    const { cities, days_count, trip_mode, trip_id, start_date } = body;
 
     if (!cities || !Array.isArray(cities) || cities.length === 0) {
       return jsonResponse({ error: "cities[] is required" }, 400);
@@ -71,6 +71,7 @@ Rules:
   - "commute_cost_inr" (integer, estimated commute/transport cost to reach the venue)
   - "food_cost_inr" (integer, estimated meal/snack cost during this slot, 0 if no meal)
   - "accommodation_cost_inr" (integer, only for evening slot if overnight stay is relevant, 0 otherwise)
+  - "transport_mode" (string, one of: "Walk", "Auto/Rickshaw", "Taxi/Cab", "Metro", "Bus", "Train", "Bicycle", "Motorbike/Scooter", "Private Car", "Ferry/Boat", "Flight", "Other" — the recommended mode of transport to reach this venue)
   - "travel_note" (string, how to get there or tips, max 1 sentence)
 - Morning activities should start around 8-9 AM, afternoon around 1-2 PM, evening around 6-7 PM. Times should flow naturally.
 - "budget_summary" has: "estimated_total" (int), "per_head" (int), "breakdown" (object with keys like "accommodation", "food", "transport", "activities" each as int)
@@ -78,10 +79,11 @@ Rules:
 - Tailor to interests: ${interests.length > 0 ? interests.join(", ") : "general exploration"}.
 - Budget level: ${budgetRange}. Pace: ${pace}.
 - Trip mode: ${trip_mode || "solo"}.
+${start_date ? `- The trip starts on ${start_date}.` : ""}
 
 Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${trip_mode || "solo"}.`;
 
-    console.log("Generating itinerary for:", cities, days_count, trip_mode);
+    console.log("Generating itinerary for:", cities, days_count, trip_mode, start_date);
 
     const model = "gemini-2.5-pro";
     const aiResponse = await fetch(
@@ -152,7 +154,7 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${t
     }
 
     console.log("Itinerary generated and saved:", itinerary.id);
-    return jsonResponse({ itinerary });
+    return jsonResponse({ itinerary, start_date });
   } catch (err: any) {
     console.error("generate-itinerary error:", err);
     return jsonResponse({ error: err?.message || "Unexpected failure.", code: "GENERATE_FAILED" });
