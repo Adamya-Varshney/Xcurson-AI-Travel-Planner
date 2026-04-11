@@ -134,66 +134,70 @@ const ExpenseCalculator = () => {
           {/* Expense rows */}
           <div className="space-y-2">
             {rows.map((row) => (
-              <div key={row.id} className="flex items-center gap-1.5 flex-wrap">
-                {/* Operation */}
-                <Select
-                  value={row.operation}
-                  onValueChange={(v) => updateRow(row.id, { operation: v as Operation })}
-                >
-                  <SelectTrigger className="w-24 h-8 text-xs shrink-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(OP_LABELS) as Operation[]).map((op) => (
-                      <SelectItem key={op} value={op} className="text-xs">
-                        <span className="flex items-center gap-1">{OP_ICONS[op]} {OP_LABELS[op]}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div key={row.id} className="space-y-1.5 p-2 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-1.5">
+                  {/* Operation */}
+                  <Select
+                    value={row.operation}
+                    onValueChange={(v) => updateRow(row.id, { operation: v as Operation })}
+                  >
+                    <SelectTrigger className="w-20 sm:w-24 h-8 text-[10px] sm:text-xs shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(OP_LABELS) as Operation[]).map((op) => (
+                        <SelectItem key={op} value={op} className="text-xs">
+                          <span className="flex items-center gap-1">{OP_ICONS[op]} {OP_LABELS[op]}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                {/* Label */}
-                <Input
-                  value={row.label}
-                  onChange={(e) => updateRow(row.id, { label: e.target.value })}
-                  placeholder="Label"
-                  className="h-8 text-xs flex-1 min-w-[80px]"
-                />
+                  {/* Label */}
+                  <Input
+                    value={row.label}
+                    onChange={(e) => updateRow(row.id, { label: e.target.value })}
+                    placeholder="Label"
+                    className="h-8 text-[10px] sm:text-xs flex-1 min-w-0"
+                  />
 
-                {/* Amount */}
-                <Input
-                  type="number"
-                  step="0.000001"
-                  value={row.amount}
-                  onChange={(e) => updateRow(row.id, { amount: e.target.value })}
-                  placeholder="0.00"
-                  className="h-8 text-xs w-28 shrink-0"
-                />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeRow(row.id)}
+                  >
+                    <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  </Button>
+                </div>
 
-                {/* Split-by (for add/divide) */}
-                {(row.operation === "add" || row.operation === "divide") && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-xs text-muted-foreground">÷</span>
-                    <Input
-                      type="number"
-                      step="1"
-                      min="1"
-                      value={row.splitBy}
-                      onChange={(e) => updateRow(row.id, { splitBy: e.target.value })}
-                      className="h-8 text-xs w-14"
-                      placeholder="1"
-                    />
-                  </div>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {/* Amount */}
+                  <Input
+                    type="number"
+                    step="0.000001"
+                    value={row.amount}
+                    onChange={(e) => updateRow(row.id, { amount: e.target.value })}
+                    placeholder="0.00"
+                    className="h-8 text-[10px] sm:text-xs flex-1 min-w-0"
+                  />
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => removeRow(row.id)}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+                  {/* Split-by */}
+                  {(row.operation === "add" || row.operation === "divide") && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">÷</span>
+                      <Input
+                        type="number"
+                        step="1"
+                        min="1"
+                        value={row.splitBy}
+                        onChange={(e) => updateRow(row.id, { splitBy: e.target.value })}
+                        className="h-8 text-[10px] sm:text-xs w-12 sm:w-14"
+                        placeholder="1"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
