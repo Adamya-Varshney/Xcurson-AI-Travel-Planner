@@ -133,9 +133,16 @@ const TimeBlockCard = ({ timeSlot, activity, onUpdate, onResuggest, isResuggesti
         <h4 className="font-semibold text-foreground text-sm">{activity.activity}</h4>
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{activity.description}</p>
         <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" /> {activity.duration_hrs}h
-          </span>
+          {activity.start_time && activity.end_time && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" /> {activity.start_time} – {activity.end_time}
+            </span>
+          )}
+          {!activity.start_time && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" /> {activity.duration_hrs}h
+            </span>
+          )}
           <span className="flex items-center gap-1">
             <IndianRupee className="w-3 h-3" /> {activity.cost_inr?.toLocaleString("en-IN")}
           </span>
