@@ -77,7 +77,7 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${t
 
     console.log("Generating itinerary for:", cities, days_count, trip_mode);
 
-    const model = "gemini-2.5-pro-preview-05-06";
+    const model = "gemini-2.5-pro";
     const aiResponse = await fetch(
       `${GEMINI_API}/${model}:generateContent?key=${GOOGLE_AI_KEY}`,
       {

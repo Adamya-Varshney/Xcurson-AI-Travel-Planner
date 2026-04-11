@@ -68,7 +68,7 @@ Edit request: "${edit_instruction}"`;
 
     console.log("Editing itinerary:", itinerary_id, "Instruction:", edit_instruction);
 
-    const model = "gemini-2.5-flash-preview-05-20";
+    const model = "gemini-2.5-flash";
     const aiResponse = await fetch(
       `${GEMINI_API}/${model}:generateContent?key=${GOOGLE_AI_KEY}`,
       {
