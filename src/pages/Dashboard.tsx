@@ -92,7 +92,7 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </Link>
-          <Link to="/trips">
+          <Link to="/itinerary">
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-5 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
@@ -123,17 +123,19 @@ const Dashboard = () => {
           ) : (
             <div className="space-y-3">
               {trips.slice(0, 5).map((trip) => (
-                <Card key={trip.id} className="border-0 shadow-sm">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-foreground">{trip.title}</div>
-                      <div className="text-sm text-muted-foreground">{trip.destination || "No destination set"}</div>
-                    </div>
-                    <Badge variant={trip.status === "completed" ? "default" : "secondary"} className={trip.status === "planning" ? "gradient-primary text-primary-foreground border-0" : ""}>
-                      {trip.status}
-                    </Badge>
-                  </CardContent>
-                </Card>
+                <Link key={trip.id} to={`/trips/${trip.id}`}>
+                  <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-foreground">{trip.title}</div>
+                        <div className="text-sm text-muted-foreground">{trip.destination || "No destination set"}</div>
+                      </div>
+                      <Badge variant={trip.status === "completed" ? "default" : "secondary"} className={trip.status === "planning" ? "gradient-primary text-primary-foreground border-0" : ""}>
+                        {trip.status}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
