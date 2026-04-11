@@ -38,7 +38,7 @@ const VibeHistory = ({ refreshKey = 0, onRestore }: VibeHistoryProps) => {
         .select("id, image_url_temp, extracted_vibe, match_explanation, matched_destinations, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(50);
       setSearches((data as VibeSearch[]) || []);
       setLoading(false);
     };

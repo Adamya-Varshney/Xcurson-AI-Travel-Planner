@@ -49,7 +49,7 @@ const MoodHistory = ({ onRestore }: MoodHistoryProps) => {
         .select("id, mood_state, energy_level, planning_horizon, trip_mode, ranked_destinations, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(50);
       setSessions((data as MoodSession[]) || []);
       setLoading(false);
     };
