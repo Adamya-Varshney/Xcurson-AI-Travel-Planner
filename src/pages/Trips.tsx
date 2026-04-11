@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, MapPin, Calendar, History, Plane } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ArrowLeft, Plus, MapPin, Calendar, History, Plane, Eye } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import ChipSelector from "@/components/onboarding/ChipSelector";
 
 const Trips = () => {

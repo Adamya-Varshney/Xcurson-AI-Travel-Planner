@@ -29,6 +29,7 @@ const AppRoutes = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/discover" element={<Discover />} />
           <Route path="/trips" element={<Trips />} />
+          <Route path="/trips/:tripId" element={<TripDetail />} />
           <Route path="/itinerary" element={<Itinerary />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
