@@ -24,7 +24,7 @@ const Dashboard = () => {
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center">
             <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
           </div>
-          <span className="font-display font-bold text-base sm:text-lg text-foreground">Wanderlust</span>
+          <span className="font-display font-bold text-base sm:text-lg text-foreground"><span className="font-display font-bold text-base sm:text-lg text-foreground">Xcurson</span></span>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
           <Link to="/profile">
