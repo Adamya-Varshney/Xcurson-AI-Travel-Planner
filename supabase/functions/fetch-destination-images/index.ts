@@ -4,10 +4,25 @@ const corsHeaders = {
 };
 
 const WIKIPEDIA_API_URL = "https://en.wikipedia.org/w/api.php";
+const WIKIPEDIA_SUMMARY_URL = "https://en.wikipedia.org/api/rest_v1/page/summary";
 const WIKIPEDIA_USER_AGENT = "Xcurson/1.0 (travel image discovery service)";
 
-async function fetchImagesForDestination(name: string, country: string): Promise<string[]> {
-  const query = `\"${name}\" ${country} travel landmarks tourism`;
+async function fetchSummaryImage(title: string): Promise<string | null> {
+  const resp = await fetch(`${WIKIPEDIA_SUMMARY_URL}/${encodeURIComponent(title)}`, {
+    headers: {
+      "User-Agent": WIKIPEDIA_USER_AGENT,
+      "Accept": "application/json",
+    },
+  });
+
+  if (!resp.ok) return null;
+
+  const data = await resp.json();
+  return data?.originalimage?.source || data?.thumbnail?.source || null;
+}
+
+async function fetchSearchImages(name: string, country: string): Promise<string[]> {
+  const query = `intitle:\"${name}\" \"${country}\" city landmarks tourism`;
   const url = new URL(WIKIPEDIA_API_URL);
   url.searchParams.set("action", "query");
   url.searchParams.set("generator", "search");
@@ -35,13 +50,22 @@ async function fetchImagesForDestination(name: string, country: string): Promise
   const data = await resp.json();
   const pages = Object.values(data?.query?.pages ?? {}) as Array<{
     index?: number;
-    title?: string;
     thumbnail?: { source?: string };
   }>;
 
   return pages
     .sort((a, b) => (a.index ?? Number.MAX_SAFE_INTEGER) - (b.index ?? Number.MAX_SAFE_INTEGER))
     .map((page) => page.thumbnail?.source)
+    .filter((src): src is string => Boolean(src));
+}
+
+async function fetchImagesForDestination(name: string, country: string): Promise<string[]> {
+  const [summaryImage, searchImages] = await Promise.all([
+    fetchSummaryImage(name),
+    fetchSearchImages(name, country),
+  ]);
+
+  return [summaryImage, ...searchImages]
     .filter((src): src is string => Boolean(src))
     .filter((src, index, arr) => arr.indexOf(src) === index)
     .slice(0, 5);
