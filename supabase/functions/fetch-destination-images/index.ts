@@ -3,19 +3,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function fetchImagesForDestination(name: string, country: string, apiKey: string, cx: string): Promise<string[]> {
-  const query = `${name} ${country} tourism attractions landmarks`;
-  const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&cx=${cx}&key=${apiKey}&searchType=image&num=5&imgSize=large&safe=active`;
-
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    console.error(`Google API error for ${name}: ${resp.status} ${await resp.text()}`);
-    return [];
-  }
-
-  const data = await resp.json();
-  const items = data.items || [];
-  return items.map((item: any) => item.link as string).filter(Boolean).slice(0, 5);
+function getUnsplashImages(name: string, country: string): string[] {
+  const queries = [
+    `${name} ${country} landmark`,
+    `${name} tourism`,
+    `${name} attractions`,
+    `${name} scenery`,
+    `${name} ${country} travel`,
+  ];
+  return queries.map(
+    (q) => `https://source.unsplash.com/800x600/?${encodeURIComponent(q)}`
+  );
 }
 
 Deno.serve(async (req) => {
@@ -24,16 +22,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("GOOGLE_CLOUD_API_KEY");
-    const cx = Deno.env.get("GOOGLE_SEARCH_ENGINE_ID");
-
-    if (!apiKey || !cx) {
-      return new Response(
-        JSON.stringify({ error: "Google API credentials not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const { destinations } = await req.json();
 
     if (!destinations || !Array.isArray(destinations) || destinations.length === 0) {
@@ -45,16 +33,9 @@ Deno.serve(async (req) => {
 
     const results: Record<string, string[]> = {};
 
-    await Promise.all(
-      destinations.slice(0, 15).map(async (dest: { name: string; country: string }) => {
-        try {
-          results[dest.name] = await fetchImagesForDestination(dest.name, dest.country, apiKey, cx);
-        } catch (err) {
-          console.error(`Failed for ${dest.name}:`, err);
-          results[dest.name] = [];
-        }
-      })
-    );
+    for (const dest of destinations.slice(0, 15)) {
+      results[dest.name] = getUnsplashImages(dest.name, dest.country);
+    }
 
     return new Response(
       JSON.stringify({ images: results }),
