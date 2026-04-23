@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
-    const { cities, days_count, trip_mode, trip_id, start_date } = body;
+    const { cities, days_count, trip_mode, trip_id, start_date, start_location } = body;
 
     if (!cities || !Array.isArray(cities) || cities.length === 0) {
       return jsonResponse({ error: "cities[] is required" }, 400);
@@ -91,6 +91,7 @@ Deno.serve(async (req) => {
 - Favourite cuisines: ${cuisines.length ? cuisines.join(", ") : "open to anything"} | Food adventurousness: ${foodAdventurousness || "unspecified"}
 - Past trips (avoid repeating identical experiences, build on these): ${pastTrips.length ? pastTrips.map((t: any) => t?.destination || t?.name || t).filter(Boolean).slice(0, 8).join("; ") : "none recorded"}
 - Trip mode for THIS trip: ${trip_mode || "solo"}${start_date ? ` | Trip starts: ${start_date}` : ""}
+- Journey origin (where the traveller is departing FROM for this trip): ${start_location || homeCity || "unspecified"}
 
 Personalisation rules:
 - Reflect the traveller's age, profession, and companions when picking venues (e.g. nightlife vs family-friendly vs accessibility-friendly).
@@ -101,14 +102,25 @@ Personalisation rules:
 - If they speak the local language, you can suggest more local/off-beat spots; if not, lean toward English-friendly venues.
 - Pace and density of activities must match their travel_pace preference.`;
 
-    const prompt = `You are a travel itinerary generator with access to Google Search. You MUST use Google Search to look up CURRENT, REAL-WORLD prices for the destination(s) before producing costs. Search for things like: "average meal cost in <city> 2026", "<city> metro fare", "taxi fare <city>", "entry fee <attraction>", "budget hotel price <city> per night", etc. Base every cost field on what you actually find — do not guess from memory. After searching, generate a detailed day-by-day itinerary as strict JSON.
+    const originLocation = start_location || [homeCity, homeCountry].filter(Boolean).join(", ") || "the traveller's home city";
+
+    const prompt = `You are a travel itinerary generator with access to Google Search. You MUST use Google Search to look up CURRENT, REAL-WORLD prices for the destination(s) AND for getting there from the traveller's starting point, before producing costs. Search for things like: "average meal cost in <city> 2026", "<city> metro fare", "taxi fare <city>", "entry fee <attraction>", "budget hotel price <city> per night", "flight <origin> to <destination> price", "train <origin> to <destination> fare", etc. Base every cost field on what you actually find — do not guess from memory. After searching, generate a detailed day-by-day itinerary as strict JSON.
 
 ${profileBlock}
 
 Rules:
 - Output ONLY valid JSON, no markdown, no code fences. The JSON must be the LAST thing in your response.
-- The JSON must be an object with keys: "title", "days", "budget_summary".
+- The JSON must be an object with keys: "title", "days", "budget_summary", "outbound_journey", "return_journey".
 - "title" is a short catchy trip title (max 8 words).
+- "outbound_journey" is an object describing how the traveller gets FROM "${originLocation}" TO ${cities[0]} on day 1. It must have:
+  - "from" (string, the origin)
+  - "to" (string, the first destination city)
+  - "transport_mode" (string, e.g. "Flight", "Train", "Bus", "Private Car")
+  - "provider" (string, e.g. specific airline/train name found via search, or "various" if unclear)
+  - "duration_hrs" (number, total travel time including transfers)
+  - "cost_inr" (integer, realistic per-person cost in INR based on Google Search of current fares)
+  - "notes" (string, 1 sentence with booking tip or route detail)
+- "return_journey" is an object with the same shape but going FROM the LAST city back to "${originLocation}".
 - "days" is an array of day objects. Each day has:
   - "day_number" (int, starting from 1)
   - "city" (string)
@@ -128,9 +140,9 @@ Rules:
   - "transport_mode" (string, one of: "Walk", "Auto/Rickshaw", "Taxi/Cab", "Metro", "Bus", "Train", "Bicycle", "Motorbike/Scooter", "Private Car", "Ferry/Boat", "Flight", "Other")
   - "travel_note" (string, how to get there or tips, max 1 sentence)
 - Morning activities should start around 8-9 AM, afternoon around 1-2 PM, evening around 6-7 PM. Times should flow naturally.
-- "budget_summary" has: "estimated_total" (int), "per_head" (int), "breakdown" (object with keys "accommodation", "food", "transport", "activities" each as int)
+- "budget_summary" has: "estimated_total" (int — MUST include outbound_journey.cost_inr + return_journey.cost_inr + sum of all activity/commute/food/accommodation costs), "per_head" (int), "breakdown" (object with keys "accommodation", "food", "transport" (which MUST include outbound + return journey costs), "activities" each as int)
 
-Generate a ${days_count}-day itinerary for: ${cities.join(", ")}.`;
+Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts FROM: ${originLocation}.`;
 
     console.log("Generating itinerary for:", cities, days_count, trip_mode, start_date);
 
@@ -188,6 +200,10 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}.`;
     const title = parsed.title || `${cities.join(" → ")} Trip`;
     const days = parsed.days || [];
     const budgetSummary = parsed.budget_summary || {};
+    // Persist outbound/return journey info inside budget_summary (JSONB) so it's available without schema changes.
+    if (parsed.outbound_journey) budgetSummary.outbound_journey = parsed.outbound_journey;
+    if (parsed.return_journey) budgetSummary.return_journey = parsed.return_journey;
+    budgetSummary.start_location = originLocation;
     const totalCost = budgetSummary.estimated_total || 0;
 
     const { data: itinerary, error: insertError } = await supabase
