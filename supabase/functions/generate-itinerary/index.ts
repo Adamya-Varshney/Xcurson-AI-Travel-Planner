@@ -44,12 +44,66 @@ Deno.serve(async (req) => {
     const { data: profile } = await supabase
       .from("user_profiles").select("*").eq("user_id", user.id).maybeSingle();
 
-    const dietary = (profile?.food_preferences as any)?.dietary || [];
-    const interests = (profile?.experience_preferences as any)?.interests || [];
-    const budgetRange = (profile?.place_preferences as any)?.budget_range || "mid";
-    const pace = (profile?.place_preferences as any)?.travel_pace || "balanced";
+    // ---- Pull the full traveller profile so Gemini can personalise deeply ----
+    const fullName = profile?.full_name || "Traveller";
+    const homeCity = profile?.home_city || "";
+    const homeCountry = profile?.home_country || "";
+    const experienceLevel = profile?.experience_level || "first_timer";
+
+    const place = (profile?.place_preferences as any) || {};
+    const exp = (profile?.experience_preferences as any) || {};
+    const culture = (profile?.cultural_preferences as any) || {};
+    const food = (profile?.food_preferences as any) || {};
+    const pastTrips = (profile?.past_trips as any[]) || [];
+
+    const dietary = food?.dietary || [];
+    const cuisines = food?.cuisines || food?.favourite_cuisines || [];
+    const foodAdventurousness = food?.adventurousness || food?.openness || "";
+    const interests = exp?.interests || [];
+    const activityTypes = exp?.activity_types || [];
+    const budgetRange = place?.budget_range || "mid";
+    const pace = place?.travel_pace || "balanced";
+    const accommodationPref = place?.accommodation || place?.stay_type || "";
+    const climatePref = place?.climate || "";
+    const landscapePref = place?.landscapes || place?.landscape_type || [];
+    const languages = culture?.languages || [];
+    const age = culture?.age || "";
+    const gender = culture?.gender || "";
+    const profession = culture?.profession || culture?.occupation || "";
+    const companions = culture?.companions || "";
+    const mobility = culture?.mobility || culture?.accessibility || "";
+    const culturalInterests = culture?.interests || [];
+
+    const profileBlock = `TRAVELLER PROFILE (use this to personalise EVERY recommendation):
+- Name: ${fullName}
+- Home base: ${[homeCity, homeCountry].filter(Boolean).join(", ") || "unspecified"}
+- Travel experience level: ${experienceLevel}
+- Age: ${age || "unspecified"} | Gender: ${gender || "unspecified"} | Profession: ${profession || "unspecified"}
+- Languages spoken: ${languages.length ? languages.join(", ") : "unspecified"}
+- Usual companions: ${companions || "unspecified"} | Mobility/accessibility needs: ${mobility || "none stated"}
+- Cultural interests: ${culturalInterests.length ? culturalInterests.join(", ") : "unspecified"}
+- Experience interests: ${interests.length ? interests.join(", ") : "general exploration"}
+- Preferred activity types: ${activityTypes.length ? activityTypes.join(", ") : "unspecified"}
+- Budget level: ${budgetRange} | Travel pace: ${pace}
+- Accommodation preference: ${accommodationPref || "unspecified"} | Climate preference: ${climatePref || "unspecified"}
+- Landscape preference: ${Array.isArray(landscapePref) && landscapePref.length ? landscapePref.join(", ") : (landscapePref || "unspecified")}
+- Dietary restrictions: ${dietary.length ? dietary.join(", ") : "none"}
+- Favourite cuisines: ${cuisines.length ? cuisines.join(", ") : "open to anything"} | Food adventurousness: ${foodAdventurousness || "unspecified"}
+- Past trips (avoid repeating identical experiences, build on these): ${pastTrips.length ? pastTrips.map((t: any) => t?.destination || t?.name || t).filter(Boolean).slice(0, 8).join("; ") : "none recorded"}
+- Trip mode for THIS trip: ${trip_mode || "solo"}${start_date ? ` | Trip starts: ${start_date}` : ""}
+
+Personalisation rules:
+- Reflect the traveller's age, profession, and companions when picking venues (e.g. nightlife vs family-friendly vs accessibility-friendly).
+- If mobility needs are stated, avoid strenuous hikes / long walks and call out accessibility in travel_note.
+- Match accommodation_cost_inr to their accommodation preference and budget level.
+- Lean food picks toward favourite cuisines while strictly respecting dietary restrictions.
+- Skip activities that closely duplicate their past trips; suggest fresh angles instead.
+- If they speak the local language, you can suggest more local/off-beat spots; if not, lean toward English-friendly venues.
+- Pace and density of activities must match their travel_pace preference.`;
 
     const prompt = `You are a travel itinerary generator with access to Google Search. You MUST use Google Search to look up CURRENT, REAL-WORLD prices for the destination(s) before producing costs. Search for things like: "average meal cost in <city> 2026", "<city> metro fare", "taxi fare <city>", "entry fee <attraction>", "budget hotel price <city> per night", etc. Base every cost field on what you actually find — do not guess from memory. After searching, generate a detailed day-by-day itinerary as strict JSON.
+
+${profileBlock}
 
 Rules:
 - Output ONLY valid JSON, no markdown, no code fences. The JSON must be the LAST thing in your response.
@@ -63,7 +117,7 @@ Rules:
   - "evening": activity object
 - Each activity object has:
   - "activity" (string, short name)
-  - "description" (string, 1-2 sentences)
+  - "description" (string, 1-2 sentences — reference WHY it fits this traveller's profile when relevant)
   - "start_time" (string, e.g. "09:00 AM")
   - "end_time" (string, e.g. "12:00 PM")
   - "duration_hrs" (number, e.g. 2.5)
@@ -71,17 +125,12 @@ Rules:
   - "commute_cost_inr" (integer, estimated commute/transport cost to reach the venue)
   - "food_cost_inr" (integer, estimated meal/snack cost during this slot, 0 if no meal)
   - "accommodation_cost_inr" (integer, only for evening slot if overnight stay is relevant, 0 otherwise)
-  - "transport_mode" (string, one of: "Walk", "Auto/Rickshaw", "Taxi/Cab", "Metro", "Bus", "Train", "Bicycle", "Motorbike/Scooter", "Private Car", "Ferry/Boat", "Flight", "Other" — the recommended mode of transport to reach this venue)
+  - "transport_mode" (string, one of: "Walk", "Auto/Rickshaw", "Taxi/Cab", "Metro", "Bus", "Train", "Bicycle", "Motorbike/Scooter", "Private Car", "Ferry/Boat", "Flight", "Other")
   - "travel_note" (string, how to get there or tips, max 1 sentence)
 - Morning activities should start around 8-9 AM, afternoon around 1-2 PM, evening around 6-7 PM. Times should flow naturally.
-- "budget_summary" has: "estimated_total" (int), "per_head" (int), "breakdown" (object with keys like "accommodation", "food", "transport", "activities" each as int)
-- Respect the traveler's dietary restrictions: ${dietary.length > 0 ? dietary.join(", ") : "none specified"}.
-- Tailor to interests: ${interests.length > 0 ? interests.join(", ") : "general exploration"}.
-- Budget level: ${budgetRange}. Pace: ${pace}.
-- Trip mode: ${trip_mode || "solo"}.
-${start_date ? `- The trip starts on ${start_date}.` : ""}
+- "budget_summary" has: "estimated_total" (int), "per_head" (int), "breakdown" (object with keys "accommodation", "food", "transport", "activities" each as int)
 
-Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${trip_mode || "solo"}.`;
+Generate a ${days_count}-day itinerary for: ${cities.join(", ")}.`;
 
     console.log("Generating itinerary for:", cities, days_count, trip_mode, start_date);
 
