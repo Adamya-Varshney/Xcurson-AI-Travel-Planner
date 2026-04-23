@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,21 +6,38 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import ChipSelector from "@/components/onboarding/ChipSelector";
-import { MapPin, Plus, Minus, X, Sparkles, CalendarIcon } from "lucide-react";
+import { MapPin, Plus, Minus, X, Sparkles, CalendarIcon, Plane } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useProfile } from "@/hooks/useProfile";
 
 interface ItinerarySetupProps {
-  onGenerate: (cities: string[], daysCount: number, tripMode: string, startDate: Date) => void;
+  onGenerate: (
+    cities: string[],
+    daysCount: number,
+    tripMode: string,
+    startDate: Date,
+    startLocation: string
+  ) => void;
   isGenerating: boolean;
   prefillCity?: string;
 }
 
 const ItinerarySetup = ({ onGenerate, isGenerating, prefillCity }: ItinerarySetupProps) => {
+  const { profile } = useProfile();
   const [cityInput, setCityInput] = useState("");
   const [cities, setCities] = useState<string[]>(prefillCity ? [prefillCity] : []);
   const [daysCount, setDaysCount] = useState(3);
   const [tripMode, setTripMode] = useState("solo");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [startLocation, setStartLocation] = useState("");
+  const [startLocationTouched, setStartLocationTouched] = useState(false);
+
+  // Prefill start location from profile (home city / country) once it loads
+  useEffect(() => {
+    if (startLocationTouched) return;
+    const home = [profile?.home_city, profile?.home_country].filter(Boolean).join(", ");
+    if (home && !startLocation) setStartLocation(home);
+  }, [profile, startLocation, startLocationTouched]);
 
   const addCity = () => {
     const trimmed = cityInput.trim();
@@ -41,7 +58,7 @@ const ItinerarySetup = ({ onGenerate, isGenerating, prefillCity }: ItinerarySetu
     }
   };
 
-  const canGenerate = cities.length > 0 && !!startDate;
+  const canGenerate = cities.length > 0 && !!startDate && !!startLocation.trim();
 
   return (
     <div className="space-y-6">
@@ -51,6 +68,29 @@ const ItinerarySetup = ({ onGenerate, isGenerating, prefillCity }: ItinerarySetu
         </div>
         <h2 className="text-xl font-display font-bold text-foreground">Create Itinerary</h2>
         <p className="text-sm text-muted-foreground">AI will craft a day-by-day plan tailored to your profile</p>
+      </div>
+
+      {/* Starting location */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground">
+          Starting from <span className="text-destructive">*</span>
+        </label>
+        <div className="relative">
+          <Plane className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="e.g. Mumbai, India"
+            value={startLocation}
+            onChange={(e) => {
+              setStartLocation(e.target.value);
+              setStartLocationTouched(true);
+            }}
+            className="pl-9"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Travel costs from this point will be included in your budget.
+          {profile?.home_city && !startLocationTouched && " Defaulted to your home city."}
+        </p>
       </div>
 
       {/* Cities input */}
@@ -156,7 +196,9 @@ const ItinerarySetup = ({ onGenerate, isGenerating, prefillCity }: ItinerarySetu
 
       {/* Generate button */}
       <Button
-        onClick={() => startDate && onGenerate(cities, daysCount, tripMode, startDate)}
+        onClick={() =>
+          startDate && onGenerate(cities, daysCount, tripMode, startDate, startLocation.trim())
+        }
         disabled={isGenerating || !canGenerate}
         className="w-full gradient-primary border-0 h-12 text-base font-semibold"
       >
@@ -172,8 +214,10 @@ const ItinerarySetup = ({ onGenerate, isGenerating, prefillCity }: ItinerarySetu
           </span>
         )}
       </Button>
-      {!startDate && cities.length > 0 && (
-        <p className="text-xs text-destructive text-center">Please select a start date to continue</p>
+      {cities.length > 0 && (!startDate || !startLocation.trim()) && (
+        <p className="text-xs text-destructive text-center">
+          {!startLocation.trim() ? "Please enter a starting location" : "Please select a start date to continue"}
+        </p>
       )}
     </div>
   );
