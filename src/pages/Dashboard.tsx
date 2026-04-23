@@ -44,11 +44,17 @@ const Dashboard = () => {
         </motion.div>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
           <Card className="border-0 shadow-sm">
             <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-xl sm:text-2xl font-display font-bold text-foreground">{activeTripCount}</div>
+              <div className="text-xl sm:text-2xl font-display font-bold text-foreground">{planningTripCount}</div>
               <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Planning</div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-display font-bold text-foreground">{plannedTripCount}</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Planned</div>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm">
