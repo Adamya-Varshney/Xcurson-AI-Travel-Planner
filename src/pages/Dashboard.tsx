@@ -140,8 +140,11 @@ const Dashboard = () => {
                         <div className="font-medium text-foreground text-sm sm:text-base truncate">{trip.title}</div>
                         <div className="text-xs sm:text-sm text-muted-foreground truncate">{trip.destination || "No destination set"}</div>
                       </div>
-                      <Badge variant={trip.status === "completed" ? "default" : "secondary"} className={`shrink-0 text-[10px] sm:text-xs ${trip.status === "planning" ? "gradient-primary text-primary-foreground border-0" : ""}`}>
-                        {trip.status}
+                      <Badge
+                        variant={(trip as any).planning_status === "completed" ? "default" : "secondary"}
+                        className={`shrink-0 text-[10px] sm:text-xs capitalize ${(trip as any).planning_status === "planned" ? "gradient-primary text-primary-foreground border-0" : ""}`}
+                      >
+                        {(trip as any).planning_status}
                       </Badge>
                     </CardContent>
                   </Card>
