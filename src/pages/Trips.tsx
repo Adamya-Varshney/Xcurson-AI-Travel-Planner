@@ -1,23 +1,57 @@
 import { useState } from "react";
-import { useTrips } from "@/hooks/useTrips";
+import { useTrips, type TripPlanningStatus } from "@/hooks/useTrips";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, MapPin, Calendar, History, Plane } from "lucide-react";
+import { ArrowLeft, Plus, MapPin, Calendar, History, Plane, Trash2, CheckCircle2, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import ChipSelector from "@/components/onboarding/ChipSelector";
 
+const PlanningStatusPill = ({ status }: { status: TripPlanningStatus }) => {
+  if (status === "completed") {
+    return (
+      <Badge variant="default" className="capitalize text-[10px] sm:text-xs gap-1">
+        <CheckCircle2 className="w-3 h-3" /> Completed
+      </Badge>
+    );
+  }
+  if (status === "planned") {
+    return (
+      <Badge className="capitalize text-[10px] sm:text-xs gap-1 gradient-primary border-0 text-primary-foreground">
+        <CheckCircle2 className="w-3 h-3" /> Planned
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="capitalize text-[10px] sm:text-xs gap-1">
+      <Loader2 className="w-3 h-3" /> Planning
+    </Badge>
+  );
+};
+
 const Trips = () => {
-  const { trips, isLoading, createTrip } = useTrips();
+  const { trips, isLoading, createTrip, deleteTrip } = useTrips();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
   const [tripMode, setTripMode] = useState("solo");
   const [creating, setCreating] = useState(false);
+  const [tripToDelete, setTripToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleCreate = async () => {
     if (!title.trim()) return;
@@ -35,8 +69,22 @@ const Trips = () => {
     }
   };
 
-  const upcomingTrips = trips.filter((t) => t.status === "planning" || t.status === "booked");
-  const completedTrips = trips.filter((t) => t.status === "completed");
+  const handleDelete = async () => {
+    if (!tripToDelete) return;
+    setDeleting(true);
+    try {
+      await deleteTrip.mutateAsync(tripToDelete.id);
+      toast({ title: "Trip deleted", description: `"${tripToDelete.title}" was removed.` });
+      setTripToDelete(null);
+    } catch (e: any) {
+      toast({ title: "Couldn't delete trip", description: e.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const upcomingTrips = trips.filter((t: any) => t.planning_status !== "completed");
+  const completedTrips = trips.filter((t: any) => t.planning_status === "completed");
 
   const renderTrips = (list: typeof trips, emptyIcon: React.ReactNode, emptyText: string) => {
     if (list.length === 0) {
@@ -49,34 +97,43 @@ const Trips = () => {
     }
     return (
       <div className="space-y-2 sm:space-y-3">
-        {list.map((trip) => (
-          <Link key={trip.id} to={`/trips/${trip.id}`}>
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-medium text-foreground text-sm sm:text-base truncate">{trip.title}</h3>
-                    {trip.destination && (
-                      <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 mt-0.5 sm:mt-1 truncate">
-                        <MapPin className="w-3 h-3 shrink-0" /> {trip.destination}
-                      </p>
-                    )}
-                    {trip.start_date && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 sm:mt-1">
-                        <Calendar className="w-3 h-3 shrink-0" /> {trip.start_date}{trip.end_date && ` → ${trip.end_date}`}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <Badge variant="outline" className="capitalize text-[10px] sm:text-xs">{trip.trip_mode}</Badge>
-                    <Badge variant={trip.status === "booked" ? "default" : "secondary"} className="capitalize text-[10px] sm:text-xs">
-                      {trip.status}
-                    </Badge>
-                  </div>
+        {list.map((trip: any) => (
+          <Card key={trip.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-start justify-between gap-2">
+                <Link to={`/trips/${trip.id}`} className="min-w-0 flex-1">
+                  <h3 className="font-medium text-foreground text-sm sm:text-base truncate">{trip.title}</h3>
+                  {trip.destination && (
+                    <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 mt-0.5 sm:mt-1 truncate">
+                      <MapPin className="w-3 h-3 shrink-0" /> {trip.destination}
+                    </p>
+                  )}
+                  {trip.start_date && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 sm:mt-1">
+                      <Calendar className="w-3 h-3 shrink-0" /> {trip.start_date}{trip.end_date && ` → ${trip.end_date}`}
+                    </p>
+                  )}
+                </Link>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <Badge variant="outline" className="capitalize text-[10px] sm:text-xs">{trip.trip_mode}</Badge>
+                  <PlanningStatusPill status={trip.planning_status} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setTripToDelete({ id: trip.id, title: trip.title });
+                    }}
+                    aria-label={`Delete ${trip.title}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
@@ -141,6 +198,28 @@ const Trips = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <AlertDialog open={!!tripToDelete} onOpenChange={(o) => !o && setTripToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this trip?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove "{tripToDelete?.title}" along with its itinerary and any bookings.
+              This action can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
