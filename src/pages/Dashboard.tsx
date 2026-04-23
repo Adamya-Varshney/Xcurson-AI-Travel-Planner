@@ -13,8 +13,9 @@ const Dashboard = () => {
   const { profile } = useProfile();
   const { trips, isLoading: tripsLoading } = useTrips();
 
-  const activeTripCount = trips.filter((t) => t.status === "planning").length;
-  const completedTripCount = trips.filter((t) => t.status === "completed").length;
+  const planningTripCount = trips.filter((t: any) => t.planning_status === "planning").length;
+  const plannedTripCount = trips.filter((t: any) => t.planning_status === "planned").length;
+  const completedTripCount = trips.filter((t: any) => t.planning_status === "completed").length;
   const firstName = profile?.full_name?.split(" ")[0] || "Traveller";
 
   return (
