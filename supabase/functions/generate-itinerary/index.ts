@@ -49,10 +49,10 @@ Deno.serve(async (req) => {
     const budgetRange = (profile?.place_preferences as any)?.budget_range || "mid";
     const pace = (profile?.place_preferences as any)?.travel_pace || "balanced";
 
-    const prompt = `You are a travel itinerary generator. Generate a detailed day-by-day itinerary as strict JSON.
+    const prompt = `You are a travel itinerary generator with access to Google Search. You MUST use Google Search to look up CURRENT, REAL-WORLD prices for the destination(s) before producing costs. Search for things like: "average meal cost in <city> 2026", "<city> metro fare", "taxi fare <city>", "entry fee <attraction>", "budget hotel price <city> per night", etc. Base every cost field on what you actually find — do not guess from memory. After searching, generate a detailed day-by-day itinerary as strict JSON.
 
 Rules:
-- Output ONLY valid JSON, no markdown, no code fences.
+- Output ONLY valid JSON, no markdown, no code fences. The JSON must be the LAST thing in your response.
 - The JSON must be an object with keys: "title", "days", "budget_summary".
 - "title" is a short catchy trip title (max 8 words).
 - "days" is an array of day objects. Each day has:
@@ -93,8 +93,8 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Trip mode: ${t
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
+          tools: [{ google_search: {} }],
           generationConfig: {
-            responseMimeType: "application/json",
             temperature: 0.7,
             maxOutputTokens: 8192,
           },
