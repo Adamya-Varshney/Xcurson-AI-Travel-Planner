@@ -200,6 +200,10 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
     const title = parsed.title || `${cities.join(" → ")} Trip`;
     const days = parsed.days || [];
     const budgetSummary = parsed.budget_summary || {};
+    // Persist outbound/return journey info inside budget_summary (JSONB) so it's available without schema changes.
+    if (parsed.outbound_journey) budgetSummary.outbound_journey = parsed.outbound_journey;
+    if (parsed.return_journey) budgetSummary.return_journey = parsed.return_journey;
+    budgetSummary.start_location = originLocation;
     const totalCost = budgetSummary.estimated_total || 0;
 
     const { data: itinerary, error: insertError } = await supabase
