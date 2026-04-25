@@ -222,6 +222,19 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
     // Persist outbound/return journey info inside budget_summary (JSONB) so it's available without schema changes.
     if (parsed.outbound_journey) budgetSummary.outbound_journey = parsed.outbound_journey;
     if (parsed.return_journey) budgetSummary.return_journey = parsed.return_journey;
+    // If the user explicitly picked an outbound option, force-overwrite with their choice.
+    if (outbound_option) {
+      budgetSummary.outbound_journey = {
+        from: originLocation,
+        to: cities[0],
+        transport_mode: outbound_option.category,
+        provider: outbound_option.provider,
+        duration_hrs: outbound_option.duration_hrs,
+        cost_inr: outbound_option.cost_inr,
+        notes: outbound_option.booking_hint || "",
+        chosen_by_user: true,
+      };
+    }
     budgetSummary.start_location = originLocation;
     const totalCost = budgetSummary.estimated_total || 0;
 
