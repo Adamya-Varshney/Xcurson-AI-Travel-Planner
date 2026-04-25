@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const body = await req.json();
-    const { cities, days_count, trip_mode, trip_id, start_date, start_location } = body;
+    const { cities, days_count, trip_mode, trip_id, start_date, start_location, outbound_option } = body;
 
     if (!cities || !Array.isArray(cities) || cities.length === 0) {
       return jsonResponse({ error: "cities[] is required" }, 400);
@@ -104,10 +104,20 @@ Personalisation rules:
 
     const originLocation = start_location || [homeCity, homeCountry].filter(Boolean).join(", ") || "the traveller's home city";
 
+    const outboundBlock = outbound_option
+      ? `\nThe traveller has ALREADY CHOSEN their outbound transport from "${originLocation}" to ${cities[0]}:
+- Category: ${outbound_option.category}
+- Provider: ${outbound_option.provider}
+- Departure: ${outbound_option.departure_time || "n/a"} | Arrival: ${outbound_option.arrival_time || "n/a"}
+- Duration: ${outbound_option.duration_hrs} hrs
+- Cost: ₹${outbound_option.cost_inr}
+You MUST use this exact choice as the "outbound_journey". Do not propose a different one.\n`
+      : "";
+
     const prompt = `You are a travel itinerary generator with access to Google Search. You MUST use Google Search to look up CURRENT, REAL-WORLD prices for the destination(s) AND for getting there from the traveller's starting point, before producing costs. Search for things like: "average meal cost in <city> 2026", "<city> metro fare", "taxi fare <city>", "entry fee <attraction>", "budget hotel price <city> per night", "flight <origin> to <destination> price", "train <origin> to <destination> fare", etc. Base every cost field on what you actually find — do not guess from memory. After searching, generate a detailed day-by-day itinerary as strict JSON.
 
 ${profileBlock}
-
+${outboundBlock}
 Rules:
 - Output ONLY valid JSON, no markdown, no code fences. The JSON must be the LAST thing in your response.
 - The JSON must be an object with keys: "title", "days", "budget_summary", "outbound_journey", "return_journey".
@@ -139,6 +149,15 @@ Rules:
   - "accommodation_cost_inr" (integer, only for evening slot if overnight stay is relevant, 0 otherwise)
   - "transport_mode" (string, one of: "Walk", "Auto/Rickshaw", "Taxi/Cab", "Metro", "Bus", "Train", "Bicycle", "Motorbike/Scooter", "Private Car", "Ferry/Boat", "Flight", "Other")
   - "travel_note" (string, how to get there or tips, max 1 sentence)
+  - "transport_alternatives" (array of 2-3 alternative ways to get to this venue from the previous activity location, found via Google Search). Each alternative is an object:
+    {
+      "mode": "Metro" | "Taxi/Cab" | "Auto/Rickshaw" | "Walk" | "Bus" | "Bicycle" | "Other",
+      "provider": "e.g. Uber / Mumbai Metro Line 1 / BEST Bus Route 138, or 'various' if generic",
+      "duration_mins": <integer>,
+      "cost_inr": <integer>,
+      "note": "1 short sentence — frequency, where to board, etc."
+    }
+    The chosen "transport_mode" + "commute_cost_inr" MUST also appear as one of these alternatives so the user can see the comparison.
 - Morning activities should start around 8-9 AM, afternoon around 1-2 PM, evening around 6-7 PM. Times should flow naturally.
 - "budget_summary" has: "estimated_total" (int — MUST include outbound_journey.cost_inr + return_journey.cost_inr + sum of all activity/commute/food/accommodation costs), "per_head" (int), "breakdown" (object with keys "accommodation", "food", "transport" (which MUST include outbound + return journey costs), "activities" each as int)
 
@@ -203,6 +222,19 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
     // Persist outbound/return journey info inside budget_summary (JSONB) so it's available without schema changes.
     if (parsed.outbound_journey) budgetSummary.outbound_journey = parsed.outbound_journey;
     if (parsed.return_journey) budgetSummary.return_journey = parsed.return_journey;
+    // If the user explicitly picked an outbound option, force-overwrite with their choice.
+    if (outbound_option) {
+      budgetSummary.outbound_journey = {
+        from: originLocation,
+        to: cities[0],
+        transport_mode: outbound_option.category,
+        provider: outbound_option.provider,
+        duration_hrs: outbound_option.duration_hrs,
+        cost_inr: outbound_option.cost_inr,
+        notes: outbound_option.booking_hint || "",
+        chosen_by_user: true,
+      };
+    }
     budgetSummary.start_location = originLocation;
     const totalCost = budgetSummary.estimated_total || 0;
 
