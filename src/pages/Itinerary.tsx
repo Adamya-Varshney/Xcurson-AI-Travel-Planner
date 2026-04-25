@@ -14,9 +14,10 @@ import AIEditBar from "@/components/itinerary/AIEditBar";
 import ResuggestModal from "@/components/itinerary/ResuggestModal";
 import ConfirmItineraryBar from "@/components/itinerary/ConfirmItineraryBar";
 import ExpenseCalculator from "@/components/itinerary/ExpenseCalculator";
+import TransportOptionsView, { type TransportOption } from "@/components/itinerary/TransportOptionsView";
 import type { Activity } from "@/components/itinerary/TimeBlockCard";
 
-type ViewState = "setup" | "loading" | "view";
+type ViewState = "setup" | "fetching-transport" | "transport-select" | "generating" | "view";
 
 const Itinerary = () => {
   const { user } = useAuth();
@@ -40,21 +41,85 @@ const Itinerary = () => {
 
   const [tripStartDate, setTripStartDate] = useState<Date | null>(null);
 
-  const handleGenerate = useCallback(async (cities: string[], daysCount: number, tripMode: string, startDate: Date, startLocation: string) => {
+  // New: outbound transport selection state
+  const [setupPayload, setSetupPayload] = useState<{
+    cities: string[];
+    daysCount: number;
+    tripMode: string;
+    startDate: Date;
+    startLocation: string;
+  } | null>(null);
+  const [transportOptions, setTransportOptions] = useState<TransportOption[]>([]);
+  const [selectedTransportId, setSelectedTransportId] = useState<string | null>(null);
+
+  // Step 1: setup → fetch outbound transport options
+  const handleSetupSubmit = useCallback(async (
+    cities: string[],
+    daysCount: number,
+    tripMode: string,
+    startDate: Date,
+    startLocation: string,
+  ) => {
+    if (!user) return;
+    setSetupPayload({ cities, daysCount, tripMode, startDate, startLocation });
+    setTripStartDate(startDate);
+    setViewState("fetching-transport");
+    setSelectedTransportId(null);
+    setTransportOptions([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-transport-options", {
+        body: {
+          from: startLocation,
+          to: cities[0],
+          start_date: startDate.toISOString().split("T")[0],
+          trip_mode: tripMode,
+        },
+      });
+      if (error) throw new Error(error.message || "Failed to fetch transport options");
+      if (data?.error) throw new Error(data.error);
+
+      const opts: TransportOption[] = data?.options || [];
+      if (opts.length === 0) {
+        toast({
+          title: "No transport options found",
+          description: "Continuing without a pre-selected mode.",
+        });
+        // Skip straight to generate without an outbound choice
+        await runGenerate({ cities, daysCount, tripMode, startDate, startLocation }, null);
+        return;
+      }
+
+      setTransportOptions(opts);
+      setSelectedTransportId(opts[0].id);
+      setViewState("transport-select");
+    } catch (e: any) {
+      console.error("Transport fetch error:", e);
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+      setViewState("setup");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Step 2: user confirms a transport option → generate itinerary
+  const runGenerate = useCallback(async (
+    payload: { cities: string[]; daysCount: number; tripMode: string; startDate: Date; startLocation: string },
+    outboundOption: TransportOption | null,
+  ) => {
     if (!user) return;
     setIsGenerating(true);
-    setViewState("loading");
+    setViewState("generating");
     setIsConfirmed(false);
-    setTripStartDate(startDate);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-itinerary", {
         body: {
-          cities,
-          days_count: daysCount,
-          trip_mode: tripMode,
-          start_date: startDate.toISOString().split("T")[0],
-          start_location: startLocation,
+          cities: payload.cities,
+          days_count: payload.daysCount,
+          trip_mode: payload.tripMode,
+          start_date: payload.startDate.toISOString().split("T")[0],
+          start_location: payload.startLocation,
+          outbound_option: outboundOption,
         },
       });
 
@@ -66,7 +131,7 @@ const Itinerary = () => {
           description: data.error,
           variant: "destructive",
         });
-        setViewState("setup");
+        setViewState(outboundOption ? "transport-select" : "setup");
         return;
       }
 
@@ -78,11 +143,17 @@ const Itinerary = () => {
     } catch (e: any) {
       console.error("Generate error:", e);
       toast({ title: "Error", description: e.message, variant: "destructive" });
-      setViewState("setup");
+      setViewState(outboundOption ? "transport-select" : "setup");
     } finally {
       setIsGenerating(false);
     }
   }, [user]);
+
+  const handleConfirmTransport = useCallback(() => {
+    if (!setupPayload || !selectedTransportId) return;
+    const chosen = transportOptions.find((o) => o.id === selectedTransportId) || null;
+    runGenerate(setupPayload, chosen);
+  }, [setupPayload, selectedTransportId, transportOptions, runGenerate]);
 
   const handleUpdateSlot = useCallback((dayNumber: number, slot: "morning" | "afternoon" | "evening", activity: Activity) => {
     if (!itinerary) return;
@@ -183,9 +254,14 @@ const Itinerary = () => {
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
-  }, [itinerary, user, navigate]);
+  }, [itinerary, user, navigate, tripStartDate]);
 
   const days = (itinerary?.content as any[]) || [];
+  const isLoading = viewState === "fetching-transport" || viewState === "generating";
+  const loadingText =
+    viewState === "fetching-transport"
+      ? "Searching the web for transport options..."
+      : "Crafting your itinerary...";
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -200,15 +276,28 @@ const Itinerary = () => {
 
       <main className="max-w-lg mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {viewState === "setup" && (
-          <ItinerarySetup onGenerate={handleGenerate} isGenerating={isGenerating} prefillCity={prefillDestination} />
+          <ItinerarySetup onGenerate={handleSetupSubmit} isGenerating={false} prefillCity={prefillDestination} />
         )}
 
-        {viewState === "loading" && (
+        {isLoading && (
           <div className="flex flex-col items-center justify-center py-16 sm:py-20 space-y-4">
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-muted-foreground font-medium text-sm sm:text-base">Crafting your itinerary...</p>
+            <p className="text-muted-foreground font-medium text-sm sm:text-base">{loadingText}</p>
             <p className="text-xs text-muted-foreground/60">This may take a moment</p>
           </div>
+        )}
+
+        {viewState === "transport-select" && setupPayload && (
+          <TransportOptionsView
+            from={setupPayload.startLocation}
+            to={setupPayload.cities[0]}
+            options={transportOptions}
+            selectedId={selectedTransportId}
+            onSelect={setSelectedTransportId}
+            onBack={() => setViewState("setup")}
+            onConfirm={handleConfirmTransport}
+            isGenerating={isGenerating}
+          />
         )}
 
         {viewState === "view" && itinerary && (
