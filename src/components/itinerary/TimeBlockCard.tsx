@@ -7,6 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil, RefreshCw, Check, X, Clock, IndianRupee, Car, UtensilsCrossed, BedDouble, Navigation } from "lucide-react";
 
+export interface TransportAlternative {
+  mode: string;
+  provider?: string;
+  duration_mins?: number;
+  cost_inr: number;
+  note?: string;
+}
+
 export interface Activity {
   activity: string;
   description: string;
@@ -19,6 +27,7 @@ export interface Activity {
   accommodation_cost_inr?: number;
   travel_note: string;
   transport_mode?: string;
+  transport_alternatives?: TransportAlternative[];
 }
 
 const TRANSPORT_MODES = [
