@@ -280,9 +280,19 @@ const TimeBlockCard = ({ timeSlot, activity, onUpdate, onResuggest, isResuggesti
             <IndianRupee className="w-3 h-3" /> {totalSlotCost.toLocaleString("en-IN")}
           </span>
           {activity.transport_mode && (
-            <span className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => { setDraft(activity); setEditing(true); }}
+              className="flex items-center gap-1 hover:text-primary transition-colors"
+              title={activity.transport_alternatives?.length ? "Tap to switch transport" : undefined}
+            >
               <Navigation className="w-3 h-3" /> {activity.transport_mode}
-            </span>
+              {activity.transport_alternatives && activity.transport_alternatives.length > 1 && (
+                <span className="text-[10px] text-primary/70">
+                  · {activity.transport_alternatives.length} options
+                </span>
+              )}
+            </button>
           )}
         </div>
         {(activity.commute_cost_inr || activity.food_cost_inr || activity.accommodation_cost_inr) ? (
