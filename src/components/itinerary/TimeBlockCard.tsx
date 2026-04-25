@@ -129,7 +129,7 @@ const TimeBlockCard = ({ timeSlot, activity, onUpdate, onResuggest, isResuggesti
             </div>
           </div>
           {/* Transport mode */}
-          <div>
+          <div className="space-y-2">
             <label className="text-xs text-muted-foreground">Mode of Transport</label>
             <Select
               value={draft.transport_mode || ""}
@@ -144,6 +144,58 @@ const TimeBlockCard = ({ timeSlot, activity, onUpdate, onResuggest, isResuggesti
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Transport alternatives — fetched via Google Search at generation time */}
+            {draft.transport_alternatives && draft.transport_alternatives.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                  Alternatives (tap to use)
+                </p>
+                <div className="space-y-1.5">
+                  {draft.transport_alternatives.map((alt, idx) => {
+                    const isActive =
+                      draft.transport_mode === alt.mode &&
+                      (draft.commute_cost_inr ?? 0) === alt.cost_inr;
+                    return (
+                      <button
+                        type="button"
+                        key={idx}
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            transport_mode: alt.mode,
+                            commute_cost_inr: alt.cost_inr,
+                          })
+                        }
+                        className={`w-full text-left rounded-md border px-2.5 py-2 text-xs transition-colors ${
+                          isActive
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/40 hover:bg-muted/40"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-foreground truncate">
+                            {alt.mode}
+                            {alt.provider ? ` · ${alt.provider}` : ""}
+                          </span>
+                          <span className="flex items-center gap-2 text-muted-foreground shrink-0">
+                            {typeof alt.duration_mins === "number" && (
+                              <span>{alt.duration_mins}m</span>
+                            )}
+                            <span className="font-semibold text-foreground">
+                              ₹{alt.cost_inr.toLocaleString("en-IN")}
+                            </span>
+                          </span>
+                        </div>
+                        {alt.note && (
+                          <p className="text-[11px] text-muted-foreground/80 mt-0.5">{alt.note}</p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           {/* Costs breakdown */}
           <div className="grid grid-cols-2 gap-2">
