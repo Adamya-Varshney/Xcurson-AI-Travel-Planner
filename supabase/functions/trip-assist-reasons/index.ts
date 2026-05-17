@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PURPOSE_ENGINE_PROMPT } from "../_shared/purpose-engine-prompt.ts";
+import { extractJson } from "../_shared/extract-json.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,9 +71,10 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT }] },
+          systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT + "\n\nUse Google Search to verify current festivals, events, dates, and seasonal info before suggesting reasons. Return STRICT JSON only — no markdown fences, no prose." }] },
           contents: [{ role: "user", parts: [{ text: JSON.stringify(userTurn) }] }],
-          generationConfig: { temperature: 0.8, maxOutputTokens: 8192, responseMimeType: "application/json" },
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.8, maxOutputTokens: 8192 },
         }),
       }
     );
@@ -91,12 +93,7 @@ Deno.serve(async (req) => {
     const finishReason = candidate?.finishReason;
     console.log("Gemini finishReason:", finishReason, "text length:", text.length);
 
-    let parsed: any = null;
-    try { parsed = JSON.parse(text); }
-    catch {
-      const m = text.match(/\{[\s\S]*\}/);
-      if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-    }
+    const parsed: any = extractJson(text);
 
     if (!parsed || parsed.task_echo === "error") {
       console.error("Parse failed. finishReason:", finishReason, "raw text:", text.slice(0, 2000));

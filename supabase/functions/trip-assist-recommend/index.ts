@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PURPOSE_ENGINE_PROMPT } from "../_shared/purpose-engine-prompt.ts";
+import { extractJson } from "../_shared/extract-json.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,9 +67,10 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT }] },
+          systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT + "\n\nUse Google Search to ground every recommendation in real, current, named places, markets, events, and prices. Cross-check dates and openings before answering. Return STRICT JSON only — no markdown fences, no prose." }] },
           contents: [{ role: "user", parts: [{ text: JSON.stringify(userTurn) }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 8192, responseMimeType: "application/json" },
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
         }),
       }
     );
@@ -84,12 +86,7 @@ Deno.serve(async (req) => {
     const aiData = await geminiRes.json();
     const text = aiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    let parsed: any = null;
-    try { parsed = JSON.parse(text); }
-    catch {
-      const m = text.match(/\{[\s\S]*\}/);
-      if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-    }
+    const parsed: any = extractJson(text);
 
     if (!parsed) {
       return new Response(JSON.stringify({ error: "Could not parse AI response" }), {
