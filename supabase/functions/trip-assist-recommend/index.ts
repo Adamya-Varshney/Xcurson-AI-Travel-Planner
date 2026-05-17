@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { PURPOSE_ENGINE_PROMPT } from "../_shared/purpose-engine-prompt.ts";
+import { extractJson } from "../_shared/extract-json.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
