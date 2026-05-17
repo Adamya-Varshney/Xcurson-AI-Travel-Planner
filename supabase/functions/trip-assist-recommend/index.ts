@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT }] },
           contents: [{ role: "user", parts: [{ text: JSON.stringify(userTurn) }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 4096, responseMimeType: "application/json" },
+          generationConfig: { temperature: 0.7, maxOutputTokens: 8192, responseMimeType: "application/json" },
         }),
       }
     );
