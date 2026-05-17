@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Compass, LogOut, RefreshCw, Home, Sparkles, Search } from "lucide-react";
+import { Compass, LogOut, RefreshCw, Home, Sparkles, Search, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import DestinationDetail from "@/components/discovery/DestinationDetail";
 import DestinationImageCarousel from "@/components/discovery/DestinationImageCarousel";
 import VibeMatchTab from "@/components/vibe/VibeMatchTab";
 import MoodHistory from "@/components/discovery/MoodHistory";
+import TripAssistTab from "@/components/discovery/TripAssistTab";
 import { useWishlist } from "@/hooks/useWishlist";
 
 interface RankedDestination {
@@ -34,7 +35,7 @@ interface RankedDestination {
   mood_score?: number;
 }
 
-type DiscoverTab = "mood" | "vibe";
+type DiscoverTab = "mood" | "vibe" | "assist";
 
 const Discover = () => {
   const { user, signOut } = useAuth();
@@ -226,6 +227,17 @@ const Discover = () => {
               <Sparkles className="w-4 h-4" />
               Vibe Match
             </button>
+            <button
+              onClick={() => setActiveTab("assist")}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "assist"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Wand2 className="w-4 h-4" />
+              Trip Assist
+            </button>
           </div>
 
           {activeTab === "mood" && (
@@ -276,12 +288,14 @@ const Discover = () => {
               }}
             />
           </>
-        ) : (
+        ) : activeTab === "vibe" ? (
           <VibeMatchTab
             onDestinationClick={(dest) => setSelectedDest(dest)}
             isWishlisted={isWishlisted}
             onToggleWishlist={(dest) => toggleWishlist(dest)}
           />
+        ) : (
+          <TripAssistTab />
         )}
       </main>
 

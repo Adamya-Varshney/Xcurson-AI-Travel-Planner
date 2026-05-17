@@ -234,6 +234,39 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_assist_queries: {
+        Row: {
+          created_at: string
+          destination: string
+          id: string
+          is_custom_reason: boolean
+          reason: string
+          response_md: string | null
+          suggested_reasons: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          id?: string
+          is_custom_reason?: boolean
+          reason: string
+          response_md?: string | null
+          suggested_reasons?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          id?: string
+          is_custom_reason?: boolean
+          reason?: string
+          response_md?: string | null
+          suggested_reasons?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           cover_image_url: string | null
