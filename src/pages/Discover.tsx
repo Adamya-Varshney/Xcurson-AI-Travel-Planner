@@ -227,6 +227,17 @@ const Discover = () => {
               <Sparkles className="w-4 h-4" />
               Vibe Match
             </button>
+            <button
+              onClick={() => setActiveTab("assist")}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "assist"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Wand2 className="w-4 h-4" />
+              Trip Assist
+            </button>
           </div>
 
           {activeTab === "mood" && (
