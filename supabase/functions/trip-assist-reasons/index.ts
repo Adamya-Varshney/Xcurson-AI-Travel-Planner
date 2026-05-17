@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { PURPOSE_ENGINE_PROMPT } from "../_shared/purpose-engine-prompt.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,13 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GOOGLE_AI_STUDIO_API_KEY = Deno.env.get("GOOGLE_AI_STUDIO_API_KEY")!;
+
+const ALLOWED_CATEGORIES = new Set([
+  "festival_event","iconic_tourism","religious_pilgrimage","food_cuisine",
+  "shopping_goods","wedding_family","wellness_retreat","adventure_outdoor",
+  "solo_self_discovery","bleisure_workation","content_creation",
+  "screen_inspired","education_campus","sports_fan",
+]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -35,11 +43,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    const prompt = `For the destination "${destination}", list the 6 MOST LIKELY reasons a traveller would visit right now or in the coming months. Mix categories: famous annual/seasonal festivals or cultural events, popular tourism experiences, business/work, visiting friends or relatives, pilgrimage/spiritual, food & shopping, adventure/sports, romantic getaways, etc. Tailor to what "${destination}" is actually known for.
+    // Pull user signals server-side
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("home_city, home_country, past_trips")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-Return ONLY a valid JSON object in this exact shape, no markdown, no commentary:
-{"reasons":[{"label":"<short reason, max 5 words>","icon":"<single emoji>","description":"<one helpful sentence, max 18 words>"}]}
-Exactly 6 reasons. Most popular/likely first.`;
+    const pastTripPurposes = Array.isArray(profile?.past_trips)
+      ? profile!.past_trips.map((t: any) => t?.purpose).filter(Boolean).slice(0, 10)
+      : [];
+
+    const userTurn = {
+      task: "suggest_reasons",
+      destination,
+      current_date: new Date().toISOString().slice(0, 10),
+      user_home_city: profile?.home_city || null,
+      user_home_country: profile?.home_country || null,
+      user_age_band: "18-28",
+      past_trip_purposes: pastTripPurposes,
+    };
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_AI_STUDIO_API_KEY}`,
@@ -47,8 +70,9 @@ Exactly 6 reasons. Most popular/likely first.`;
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 800, responseMimeType: "application/json" },
+          systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT }] },
+          contents: [{ role: "user", parts: [{ text: JSON.stringify(userTurn) }] }],
+          generationConfig: { temperature: 0.8, maxOutputTokens: 2048, responseMimeType: "application/json" },
         }),
       }
     );
@@ -64,30 +88,44 @@ Exactly 6 reasons. Most popular/likely first.`;
     const aiData = await geminiRes.json();
     const text = aiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    let reasons: Array<{ label: string; icon: string; description: string }> = [];
-    try {
-      const parsed = JSON.parse(text);
-      reasons = Array.isArray(parsed?.reasons) ? parsed.reasons : [];
-    } catch {
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { reasons = JSON.parse(match[0])?.reasons || []; } catch {}
-      }
+    let parsed: any = null;
+    try { parsed = JSON.parse(text); }
+    catch {
+      const m = text.match(/\{[\s\S]*\}/);
+      if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
     }
 
-    reasons = reasons.slice(0, 6).map((r: any) => ({
-      label: String(r?.label || "").slice(0, 60),
-      icon: String(r?.icon || "✨").slice(0, 4),
-      description: String(r?.description || "").slice(0, 160),
-    })).filter((r) => r.label);
-
-    if (reasons.length === 0) {
-      return new Response(JSON.stringify({ error: "Could not generate reasons" }), {
+    if (!parsed || parsed.task_echo === "error") {
+      return new Response(JSON.stringify({ error: parsed?.error_message || "Could not parse reasons" }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ destination, reasons }), {
+    const rawReasons: any[] = Array.isArray(parsed?.reasons) ? parsed.reasons : [];
+    const reasons = rawReasons.slice(0, 6).map((r: any, i: number) => ({
+      id: String(r?.id || `r${i+1}`),
+      title: String(r?.title || "").slice(0, 80),
+      category: ALLOWED_CATEGORIES.has(r?.category) ? r.category : "iconic_tourism",
+      icon_hint: String(r?.icon_hint || "sparkles").slice(0, 30),
+      tagline: String(r?.tagline || "").slice(0, 120),
+      time_relevance: ["active_now","upcoming_30d","upcoming_90d","year_round"].includes(r?.time_relevance) ? r.time_relevance : "year_round",
+      specific_anchor: r?.specific_anchor ? String(r.specific_anchor).slice(0, 160) : null,
+      approximate_dates: r?.approximate_dates ? String(r.approximate_dates).slice(0, 60) : null,
+      confidence: typeof r?.confidence === "number" ? Math.max(0, Math.min(1, r.confidence)) : 0.6,
+    })).filter((r) => r.title);
+
+    if (reasons.length < 4) {
+      return new Response(JSON.stringify({ error: "Could not generate enough reasons" }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({
+      destination,
+      destination_resolved: parsed?.destination_resolved || destination,
+      current_season: parsed?.current_season || null,
+      reasons,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
