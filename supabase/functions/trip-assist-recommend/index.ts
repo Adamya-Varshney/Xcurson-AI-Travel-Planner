@@ -66,9 +66,10 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT }] },
+          systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT + "\n\nUse Google Search to ground every recommendation in real, current, named places, markets, events, and prices. Cross-check dates and openings before answering. Return STRICT JSON only — no markdown fences, no prose." }] },
           contents: [{ role: "user", parts: [{ text: JSON.stringify(userTurn) }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 8192, responseMimeType: "application/json" },
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
         }),
       }
     );
