@@ -288,12 +288,14 @@ const Discover = () => {
               }}
             />
           </>
-        ) : (
+        ) : activeTab === "vibe" ? (
           <VibeMatchTab
             onDestinationClick={(dest) => setSelectedDest(dest)}
             isWishlisted={isWishlisted}
             onToggleWishlist={(dest) => toggleWishlist(dest)}
           />
+        ) : (
+          <TripAssistTab />
         )}
       </main>
 
