@@ -236,34 +236,46 @@ export type Database = {
       }
       trip_assist_queries: {
         Row: {
+          answer_summary: string | null
           created_at: string
           destination: string
           id: string
           is_custom_reason: boolean
           reason: string
+          response_json: Json | null
           response_md: string | null
+          selected_reason_category: string | null
           suggested_reasons: Json | null
           user_id: string
+          user_query: string | null
         }
         Insert: {
+          answer_summary?: string | null
           created_at?: string
           destination: string
           id?: string
           is_custom_reason?: boolean
           reason: string
+          response_json?: Json | null
           response_md?: string | null
+          selected_reason_category?: string | null
           suggested_reasons?: Json | null
           user_id: string
+          user_query?: string | null
         }
         Update: {
+          answer_summary?: string | null
           created_at?: string
           destination?: string
           id?: string
           is_custom_reason?: boolean
           reason?: string
+          response_json?: Json | null
           response_md?: string | null
+          selected_reason_category?: string | null
           suggested_reasons?: Json | null
           user_id?: string
+          user_query?: string | null
         }
         Relationships: []
       }

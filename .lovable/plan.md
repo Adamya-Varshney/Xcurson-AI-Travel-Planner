@@ -1,80 +1,74 @@
-## Trip Assist (new Discover sub-section)
+## Trip Assist — wire in the Purpose Engine system prompt
 
-A third tab in Discover that lets a user enter a destination, pick (or type) a reason for visiting from 6 AI-suggested reasons, and receive a polished, contextual recommendation from Gemini.
+Replace the placeholder system prompt with the user's "Xcurson Purpose Engine" spec, switch both edge functions to its strict JSON schemas, and upgrade the UI to render the richer output (named recommendations, price bands, insider tips, follow-up prompts).
 
-### User flow
+### 1. Edge function: `trip-assist-reasons`
 
-1. User opens Discover → **Trip Assist** tab (third, next to Mood Match & Vibe Match).
-2. User types a destination (e.g. "Jaipur"). Submit.
-3. Gemini returns 6 likely **reasons to visit** (festivals, cultural events, tourism, visiting family, business, etc.), rendered as selectable chips. A free-text "Other reason…" input is also shown.
-4. User picks a chip or types a custom reason and submits.
-5. Gemini returns a **crisp, aesthetic recommendation** (markdown-rendered) tailored to destination + reason, using the system prompt you'll provide.
-6. Result is saved to history; user can revisit past queries from a "Recent assists" list below the form.
+- Replace the inline prompt with the full Purpose Engine system prompt as `SYSTEM_PROMPT` (stored as a const).
+- Send it via Gemini's `systemInstruction`. User turn is a compact JSON block:
+  ```json
+  { "task": "suggest_reasons",
+    "destination": "...",
+    "current_date": "<ISO today>",
+    "user_home_city": "...", "user_home_country": "...",
+    "user_age_band": "...", "past_trip_purposes": [...] }
+  ```
+- Pull `user_home_city/country`, age, past trip purposes from `user_profiles` (server-side) so the model gets real signals — no client trust needed.
+- Keep `responseMimeType: application/json`.
+- Validate response shape: require `task_echo === "suggest_reasons"` and a `reasons` array of 4–6 items. Map to the existing frontend shape (`label`, `icon`, `description`) while ALSO returning the full structured reason objects (so the UI can show tagline, dates, category color).
+- On `task_echo === "error"` from the model, surface `error_message`.
 
-### UI / layout
+### 2. Edge function: `trip-assist-recommend`
 
-- New tab button **Trip Assist** in the existing tab switcher in `src/pages/Discover.tsx`.
-- New component `src/components/discovery/TripAssistTab.tsx` orchestrating 3 steps:
-  - `TripAssistDestinationInput` — single Input + submit.
-  - `TripAssistReasonPicker` — 6 chips (loading skeletons while fetching) + custom reason input + back button.
-  - `TripAssistResult` — markdown-rendered recommendation card with destination/reason header, copy button, "Ask another" reset, and "Save to wishlist / Create itinerary" CTAs (reusing existing patterns).
-- `TripAssistHistory` — list of past queries; click to re-open the saved result.
-- Styling: glassmorphism cards, Outfit/Space Grotesk typography, primary gradient accents — matches Mood Match & Vibe Match.
+- Same `SYSTEM_PROMPT` constant (single source of truth — extract to a shared file `supabase/functions/_shared/purpose-engine-prompt.ts`).
+- User turn:
+  ```json
+  { "task": "generate_recommendations",
+    "destination": "...", "current_date": "...",
+    "selected_reason": { full reason object from Task A },
+    "user_query": "...",
+    "user_home_city": "...", "user_home_country": "...", "user_age_band": "..." }
+  ```
+- Accept a new `user_query` field from the client (currently we only send `reason`). The flow becomes: pick reason → ask a question → get recommendations.
+- Use `responseMimeType: application/json`. Parse and validate the Part 3 schema.
+- Persist to `trip_assist_queries`: store the full structured JSON in `response_md` (rename usage — keep column, store JSON string) OR add a new `response_json jsonb` column. **Recommended: add `response_json jsonb` column** via migration, keep `response_md` for backwards compatibility (null going forward). Also store `user_query` (new column) and `selected_reason_category`.
 
-### Backend (edge functions)
+### 3. DB migration
 
-Two new Supabase edge functions, both calling **Google AI Studio API directly** with `GOOGLE_AI_STUDIO_API_KEY` (consistent with the rest of the app):
+Add to `trip_assist_queries`:
+- `user_query text` (nullable)
+- `response_json jsonb` (nullable)
+- `selected_reason_category text` (nullable)
+- `answer_summary text` (nullable, for fast history previews)
 
-1. `supabase/functions/trip-assist-reasons/index.ts`
-   - Input: `{ destination: string }`
-   - Calls Gemini (gemini-2.5-flash) with a fixed prompt to return JSON: `{ reasons: [{ label, icon, description }] }` — exactly 6.
-   - Returns parsed array.
+Existing rows remain valid; new flow writes the new columns.
 
-2. `supabase/functions/trip-assist-recommend/index.ts`
-   - Input: `{ destination, reason, custom_reason? }`
-   - Uses the **system prompt you will provide** (placeholder constant `SYSTEM_PROMPT` at top of file, clearly marked `// TODO: replace with user-provided prompt`).
-   - Calls Gemini (gemini-2.5-pro for quality) and returns `{ markdown: string }`.
-   - Persists the full record (destination, reason, response, user_id) to `trip_assist_queries`.
+### 4. Frontend: `TripAssistTab.tsx` — new 4-step flow
 
-Both functions: CORS headers, JWT verification in code, input validation (Zod-style guards), error handling. `verify_jwt = false` not required (default is fine).
+Steps become: `destination` → `reason` → **`question`** (new) → `result`.
 
-### Database
+- **Reason step**: render the richer reason objects — show `title`, `tagline`, `icon_hint` (mapped to lucide icon or emoji fallback), `category` chip, `approximate_dates` if present, confidence-driven subtle styling for low-confidence fallbacks. Custom-reason input stays.
+- **Question step (new)**: after a reason is picked, show a textarea: "What do you want to know?" with 3–4 suggested starter chips based on the chosen category (e.g. for `wedding_family`: "Where do I shop for outfits?", "What gift do I bring?", "Etiquette tips"). Submit → call recommend.
+- **Result step**: replace markdown rendering with a structured layout:
+  - `answer_summary` as the lede.
+  - Recommendation cards: title, neighborhood badge, price band pill, why-it-fits line, details paragraph, "Insider tip" callout, tags.
+  - Optional sections: `what_to_pack` (chips), `watch_outs` (warning callout), `data_freshness_warning` (subtle banner).
+  - `follow_up_prompts` rendered as 3 tappable chips that jump back into the question step with that text prefilled (same destination + reason, new query).
+  - Keep Copy button (copies a formatted text version).
+- History: show `destination · reason · answer_summary` preview. Opening a history item restores the full structured result.
 
-New migration to add a `trip_assist_queries` table:
+### 5. Files touched
 
 ```text
-trip_assist_queries
-  id              uuid PK
-  user_id         uuid (not null)
-  destination     text (not null)
-  reason          text (not null)
-  is_custom_reason boolean default false
-  response_md     text
-  suggested_reasons jsonb       -- the 6 chips shown (for replay)
-  created_at      timestamptz default now()
+supabase/functions/_shared/purpose-engine-prompt.ts   (new)
+supabase/functions/trip-assist-reasons/index.ts        (rewrite prompt + parsing)
+supabase/functions/trip-assist-recommend/index.ts      (rewrite prompt + parsing + accept user_query)
+supabase/migrations/<new>.sql                          (add 4 columns)
+src/components/discovery/TripAssistTab.tsx             (4-step flow + new result UI)
+mem://features/trip-assist.md                          (update spec)
 ```
 
-RLS: users can SELECT / INSERT / DELETE only their own rows (`auth.uid() = user_id`). No UPDATE needed.
+### Open questions before I build
 
-### Frontend wiring
-
-- `useTripAssist` hook (`src/hooks/useTripAssist.ts`) wrapping:
-  - `fetchReasons(destination)` → invokes `trip-assist-reasons`.
-  - `fetchRecommendation(destination, reason)` → invokes `trip-assist-recommend`.
-  - `fetchHistory()` → queries `trip_assist_queries` for current user (latest 20).
-- Markdown rendering via existing `react-markdown` (or add it if not present — verify during build).
-- All client calls use `supabase.functions.invoke()` with the user's session.
-
-### Notes / open items
-
-- **System prompt**: I'll wire a placeholder constant in `trip-assist-recommend/index.ts`. You paste the final prompt in your next message and I'll drop it in (one-line change).
-- Models follow existing project convention: flash for reasons (fast/cheap), pro for the final response (quality).
-- This is purely additive — no changes to Mood Match or Vibe Match logic.
-
-### Build order
-
-1. Migration: create `trip_assist_queries` table + RLS.
-2. Edge functions: `trip-assist-reasons` and `trip-assist-recommend` (with placeholder system prompt).
-3. Frontend: hook, tab component, sub-components, integrate into `Discover.tsx` tab switcher.
-4. History list under the form.
-5. Smoke test end-to-end in preview.
+1. **Suggested-question starter chips on the new Question step** — auto-generate them from the selected reason's category (hardcoded mapping in frontend), or ask Gemini for 3 starters as part of the reasons response? Hardcoded is faster + free; AI-generated is more tailored.
+2. **History storage** — OK to add the 4 new columns and have new entries skip `response_md`? Old entries (already saved) will keep rendering as markdown via a fallback path.
