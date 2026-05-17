@@ -1,43 +1,80 @@
+## Trip Assist (new Discover sub-section)
 
+A third tab in Discover that lets a user enter a destination, pick (or type) a reason for visiting from 6 AI-suggested reasons, and receive a polished, contextual recommendation from Gemini.
 
-## Plan: Add History Sections to Mood Match and Vibe Match
+### User flow
 
-### Summary
-Add collapsible history sections below the main content in both tabs, showing past mood sessions and vibe searches from the database.
+1. User opens Discover → **Trip Assist** tab (third, next to Mood Match & Vibe Match).
+2. User types a destination (e.g. "Jaipur"). Submit.
+3. Gemini returns 6 likely **reasons to visit** (festivals, cultural events, tourism, visiting family, business, etc.), rendered as selectable chips. A free-text "Other reason…" input is also shown.
+4. User picks a chip or types a custom reason and submits.
+5. Gemini returns a **crisp, aesthetic recommendation** (markdown-rendered) tailored to destination + reason, using the system prompt you'll provide.
+6. Result is saved to history; user can revisit past queries from a "Recent assists" list below the form.
 
-### What already exists
-- **`mood_sessions`** table: stores `mood_state`, `energy_level`, `planning_horizon`, `trip_mode`, `ranked_destinations`, `created_at`
-- **`vibe_searches`** table: stores `image_url_temp`, `extracted_vibe`, `match_explanation`, `matched_destinations`, `created_at`
-- Both have RLS policies allowing authenticated users to read their own records.
+### UI / layout
 
-### Changes
+- New tab button **Trip Assist** in the existing tab switcher in `src/pages/Discover.tsx`.
+- New component `src/components/discovery/TripAssistTab.tsx` orchestrating 3 steps:
+  - `TripAssistDestinationInput` — single Input + submit.
+  - `TripAssistReasonPicker` — 6 chips (loading skeletons while fetching) + custom reason input + back button.
+  - `TripAssistResult` — markdown-rendered recommendation card with destination/reason header, copy button, "Ask another" reset, and "Save to wishlist / Create itinerary" CTAs (reusing existing patterns).
+- `TripAssistHistory` — list of past queries; click to re-open the saved result.
+- Styling: glassmorphism cards, Outfit/Space Grotesk typography, primary gradient accents — matches Mood Match & Vibe Match.
 
-**1. Create `src/components/discovery/MoodHistory.tsx`**
-- Fetch last 10 mood sessions from `mood_sessions` ordered by `created_at desc`
-- Display each as a compact card showing: mood emoji + label, energy, planning horizon, trip mode, date, and number of matched destinations
-- Clicking a card restores those results into the Discover page (calls a callback with the session data)
+### Backend (edge functions)
 
-**2. Create `src/components/vibe/VibeHistory.tsx`**
-- Fetch last 10 vibe searches from `vibe_searches` ordered by `created_at desc`
-- Display each as a compact card with: thumbnail from `image_url_temp`, extracted vibe summary (landscape + mood tags), number of matched destinations, date
-- Clicking a card restores those results into the Vibe Match tab
+Two new Supabase edge functions, both calling **Google AI Studio API directly** with `GOOGLE_AI_STUDIO_API_KEY` (consistent with the rest of the app):
 
-**3. Update `src/pages/Discover.tsx`**
-- Import and render `MoodHistory` below the mood match destinations list
-- Pass a callback to restore a past mood session's destinations and mood state
+1. `supabase/functions/trip-assist-reasons/index.ts`
+   - Input: `{ destination: string }`
+   - Calls Gemini (gemini-2.5-flash) with a fixed prompt to return JSON: `{ reasons: [{ label, icon, description }] }` — exactly 6.
+   - Returns parsed array.
 
-**4. Update `src/components/vibe/VibeMatchTab.tsx`**
-- Import and render `VibeHistory` below the vibe results / input area
-- Pass a callback to restore past vibe search results (sets image preview, extracted vibe, matched destinations)
+2. `supabase/functions/trip-assist-recommend/index.ts`
+   - Input: `{ destination, reason, custom_reason? }`
+   - Uses the **system prompt you will provide** (placeholder constant `SYSTEM_PROMPT` at top of file, clearly marked `// TODO: replace with user-provided prompt`).
+   - Calls Gemini (gemini-2.5-pro for quality) and returns `{ markdown: string }`.
+   - Persists the full record (destination, reason, response, user_id) to `trip_assist_queries`.
 
-### UI Design
-- Each history section has a "History" heading with a clock icon
-- Cards are compact horizontal rows with key info and relative timestamps ("2h ago", "Yesterday")
-- Shown as a scrollable list, max 10 items
-- Empty state: "No past searches yet"
+Both functions: CORS headers, JWT verification in code, input validation (Zod-style guards), error handling. `verify_jwt = false` not required (default is fine).
 
-### Technical Details
-- No database migrations needed — tables already have all required columns
-- Uses existing Supabase client queries with RLS
-- Data is fetched on component mount with `useEffect`
+### Database
 
+New migration to add a `trip_assist_queries` table:
+
+```text
+trip_assist_queries
+  id              uuid PK
+  user_id         uuid (not null)
+  destination     text (not null)
+  reason          text (not null)
+  is_custom_reason boolean default false
+  response_md     text
+  suggested_reasons jsonb       -- the 6 chips shown (for replay)
+  created_at      timestamptz default now()
+```
+
+RLS: users can SELECT / INSERT / DELETE only their own rows (`auth.uid() = user_id`). No UPDATE needed.
+
+### Frontend wiring
+
+- `useTripAssist` hook (`src/hooks/useTripAssist.ts`) wrapping:
+  - `fetchReasons(destination)` → invokes `trip-assist-reasons`.
+  - `fetchRecommendation(destination, reason)` → invokes `trip-assist-recommend`.
+  - `fetchHistory()` → queries `trip_assist_queries` for current user (latest 20).
+- Markdown rendering via existing `react-markdown` (or add it if not present — verify during build).
+- All client calls use `supabase.functions.invoke()` with the user's session.
+
+### Notes / open items
+
+- **System prompt**: I'll wire a placeholder constant in `trip-assist-recommend/index.ts`. You paste the final prompt in your next message and I'll drop it in (one-line change).
+- Models follow existing project convention: flash for reasons (fast/cheap), pro for the final response (quality).
+- This is purely additive — no changes to Mood Match or Vibe Match logic.
+
+### Build order
+
+1. Migration: create `trip_assist_queries` table + RLS.
+2. Edge functions: `trip-assist-reasons` and `trip-assist-recommend` (with placeholder system prompt).
+3. Frontend: hook, tab component, sub-components, integrate into `Discover.tsx` tab switcher.
+4. History list under the form.
+5. Smoke test end-to-end in preview.
