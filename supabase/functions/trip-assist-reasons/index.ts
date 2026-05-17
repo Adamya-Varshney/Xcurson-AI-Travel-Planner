@@ -92,12 +92,7 @@ Deno.serve(async (req) => {
     const finishReason = candidate?.finishReason;
     console.log("Gemini finishReason:", finishReason, "text length:", text.length);
 
-    let parsed: any = null;
-    try { parsed = JSON.parse(text); }
-    catch {
-      const m = text.match(/\{[\s\S]*\}/);
-      if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-    }
+    const parsed: any = extractJson(text);
 
     if (!parsed || parsed.task_echo === "error") {
       console.error("Parse failed. finishReason:", finishReason, "raw text:", text.slice(0, 2000));

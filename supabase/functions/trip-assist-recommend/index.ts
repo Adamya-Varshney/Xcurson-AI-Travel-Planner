@@ -85,12 +85,7 @@ Deno.serve(async (req) => {
     const aiData = await geminiRes.json();
     const text = aiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    let parsed: any = null;
-    try { parsed = JSON.parse(text); }
-    catch {
-      const m = text.match(/\{[\s\S]*\}/);
-      if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-    }
+    const parsed: any = extractJson(text);
 
     if (!parsed) {
       return new Response(JSON.stringify({ error: "Could not parse AI response" }), {
