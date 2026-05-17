@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: PURPOSE_ENGINE_PROMPT }] },
           contents: [{ role: "user", parts: [{ text: JSON.stringify(userTurn) }] }],
-          generationConfig: { temperature: 0.8, maxOutputTokens: 2048, responseMimeType: "application/json" },
+          generationConfig: { temperature: 0.8, maxOutputTokens: 8192, responseMimeType: "application/json" },
         }),
       }
     );
@@ -86,7 +86,10 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await geminiRes.json();
-    const text = aiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const candidate = aiData?.candidates?.[0];
+    const text = candidate?.content?.parts?.map((p: any) => p?.text || "").join("") || "";
+    const finishReason = candidate?.finishReason;
+    console.log("Gemini finishReason:", finishReason, "text length:", text.length);
 
     let parsed: any = null;
     try { parsed = JSON.parse(text); }
@@ -96,7 +99,12 @@ Deno.serve(async (req) => {
     }
 
     if (!parsed || parsed.task_echo === "error") {
-      return new Response(JSON.stringify({ error: parsed?.error_message || "Could not parse reasons" }), {
+      console.error("Parse failed. finishReason:", finishReason, "raw text:", text.slice(0, 2000));
+      return new Response(JSON.stringify({
+        error: parsed?.error_message || "Could not parse reasons",
+        finishReason,
+        raw_preview: text.slice(0, 500),
+      }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
