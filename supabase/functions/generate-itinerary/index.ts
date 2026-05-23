@@ -176,7 +176,7 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
           tools: [{ google_search: {} }],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 8192,
+            maxOutputTokens: 32768,
           },
         }),
       }
@@ -196,7 +196,8 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
     }
 
     const aiData = await aiResponse.json();
-    const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const aiParts = aiData.candidates?.[0]?.content?.parts || [];
+    const rawText = aiParts.map((p: any) => p?.text || "").join("");
     const finishReason = aiData.candidates?.[0]?.finishReason || "";
 
     if (!rawText || rawText.trim().length < 10) {
@@ -206,14 +207,28 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
 
     let parsed: any;
     try {
-      let cleaned = rawText.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
+      const cleaned = rawText.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonStart = cleaned.search(/\{/);
+      if (jsonStart === -1) throw new Error("No JSON found");
       const jsonEnd = cleaned.lastIndexOf("}");
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
-      parsed = JSON.parse(cleaned.slice(jsonStart, jsonEnd + 1));
+      const candidate = jsonEnd > jsonStart ? cleaned.slice(jsonStart, jsonEnd + 1) : cleaned.slice(jsonStart);
+      try {
+        parsed = JSON.parse(candidate);
+      } catch (innerErr) {
+        const repaired = repairTruncatedJson(cleaned.slice(jsonStart));
+        if (repaired) {
+          parsed = JSON.parse(repaired);
+          console.warn("Recovered partial itinerary JSON. finishReason:", finishReason);
+        } else {
+          throw innerErr;
+        }
+      }
     } catch (e) {
-      console.error("Failed to parse itinerary JSON:", e, rawText);
-      return jsonResponse({ error: "Failed to parse generated itinerary.", code: "AI_RESPONSE_PARSE_FAILED" });
+      console.error("Failed to parse itinerary JSON. finishReason:", finishReason, "len:", rawText.length, "tail:", rawText.slice(-300));
+      const msg = finishReason === "MAX_TOKENS"
+        ? "The itinerary was too long to fit in one response. Try a shorter trip (e.g. 7-8 days) or split it."
+        : "Failed to parse generated itinerary.";
+      return jsonResponse({ error: msg, code: "AI_RESPONSE_PARSE_FAILED" });
     }
 
     const title = parsed.title || `${cities.join(" → ")} Trip`;
