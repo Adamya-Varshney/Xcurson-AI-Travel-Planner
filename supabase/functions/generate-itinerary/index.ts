@@ -17,6 +17,59 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// Best-effort repair for truncated JSON: walks the string tracking string/escape
+// state and the open bracket stack, then trims to the last "safe" boundary
+// (after a complete value) and closes any remaining open arrays/objects.
+function repairTruncatedJson(input: string): string | null {
+  if (!input) return null;
+  const stack: string[] = [];
+  let inStr = false;
+  let escape = false;
+  let lastSafe = -1; // index just after a complete top-level value at depth >= 1
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (inStr) {
+      if (escape) { escape = false; continue; }
+      if (ch === "\\") { escape = true; continue; }
+      if (ch === '"') { inStr = false; }
+      continue;
+    }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === "{" || ch === "[") { stack.push(ch); continue; }
+    if (ch === "}" || ch === "]") {
+      stack.pop();
+      lastSafe = i + 1;
+      continue;
+    }
+    if (ch === "," && stack.length > 0) {
+      lastSafe = i; // safe to cut before this comma
+    }
+  }
+  if (lastSafe <= 0) return null;
+  let out = input.slice(0, lastSafe).replace(/,\s*$/, "");
+  // Recount open brackets in the trimmed slice
+  const openStack: string[] = [];
+  let s = false, esc = false;
+  for (let i = 0; i < out.length; i++) {
+    const ch = out[i];
+    if (s) {
+      if (esc) { esc = false; continue; }
+      if (ch === "\\") { esc = true; continue; }
+      if (ch === '"') s = false;
+      continue;
+    }
+    if (ch === '"') { s = true; continue; }
+    if (ch === "{" || ch === "[") openStack.push(ch);
+    else if (ch === "}" || ch === "]") openStack.pop();
+  }
+  while (openStack.length) {
+    const open = openStack.pop();
+    out += open === "{" ? "}" : "]";
+  }
+  return out;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
