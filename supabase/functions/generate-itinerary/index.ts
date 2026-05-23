@@ -17,6 +17,59 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// Best-effort repair for truncated JSON: walks the string tracking string/escape
+// state and the open bracket stack, then trims to the last "safe" boundary
+// (after a complete value) and closes any remaining open arrays/objects.
+function repairTruncatedJson(input: string): string | null {
+  if (!input) return null;
+  const stack: string[] = [];
+  let inStr = false;
+  let escape = false;
+  let lastSafe = -1; // index just after a complete top-level value at depth >= 1
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    if (inStr) {
+      if (escape) { escape = false; continue; }
+      if (ch === "\\") { escape = true; continue; }
+      if (ch === '"') { inStr = false; }
+      continue;
+    }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === "{" || ch === "[") { stack.push(ch); continue; }
+    if (ch === "}" || ch === "]") {
+      stack.pop();
+      lastSafe = i + 1;
+      continue;
+    }
+    if (ch === "," && stack.length > 0) {
+      lastSafe = i; // safe to cut before this comma
+    }
+  }
+  if (lastSafe <= 0) return null;
+  let out = input.slice(0, lastSafe).replace(/,\s*$/, "");
+  // Recount open brackets in the trimmed slice
+  const openStack: string[] = [];
+  let s = false, esc = false;
+  for (let i = 0; i < out.length; i++) {
+    const ch = out[i];
+    if (s) {
+      if (esc) { esc = false; continue; }
+      if (ch === "\\") { esc = true; continue; }
+      if (ch === '"') s = false;
+      continue;
+    }
+    if (ch === '"') { s = true; continue; }
+    if (ch === "{" || ch === "[") openStack.push(ch);
+    else if (ch === "}" || ch === "]") openStack.pop();
+  }
+  while (openStack.length) {
+    const open = openStack.pop();
+    out += open === "{" ? "}" : "]";
+  }
+  return out;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -176,7 +229,7 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
           tools: [{ google_search: {} }],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 8192,
+            maxOutputTokens: 32768,
           },
         }),
       }
@@ -196,7 +249,8 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
     }
 
     const aiData = await aiResponse.json();
-    const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const aiParts = aiData.candidates?.[0]?.content?.parts || [];
+    const rawText = aiParts.map((p: any) => p?.text || "").join("");
     const finishReason = aiData.candidates?.[0]?.finishReason || "";
 
     if (!rawText || rawText.trim().length < 10) {
@@ -206,14 +260,28 @@ Generate a ${days_count}-day itinerary for: ${cities.join(", ")}. Journey starts
 
     let parsed: any;
     try {
-      let cleaned = rawText.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
+      const cleaned = rawText.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonStart = cleaned.search(/\{/);
+      if (jsonStart === -1) throw new Error("No JSON found");
       const jsonEnd = cleaned.lastIndexOf("}");
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
-      parsed = JSON.parse(cleaned.slice(jsonStart, jsonEnd + 1));
+      const candidate = jsonEnd > jsonStart ? cleaned.slice(jsonStart, jsonEnd + 1) : cleaned.slice(jsonStart);
+      try {
+        parsed = JSON.parse(candidate);
+      } catch (innerErr) {
+        const repaired = repairTruncatedJson(cleaned.slice(jsonStart));
+        if (repaired) {
+          parsed = JSON.parse(repaired);
+          console.warn("Recovered partial itinerary JSON. finishReason:", finishReason);
+        } else {
+          throw innerErr;
+        }
+      }
     } catch (e) {
-      console.error("Failed to parse itinerary JSON:", e, rawText);
-      return jsonResponse({ error: "Failed to parse generated itinerary.", code: "AI_RESPONSE_PARSE_FAILED" });
+      console.error("Failed to parse itinerary JSON. finishReason:", finishReason, "len:", rawText.length, "tail:", rawText.slice(-300));
+      const msg = finishReason === "MAX_TOKENS"
+        ? "The itinerary was too long to fit in one response. Try a shorter trip (e.g. 7-8 days) or split it."
+        : "Failed to parse generated itinerary.";
+      return jsonResponse({ error: msg, code: "AI_RESPONSE_PARSE_FAILED" });
     }
 
     const title = parsed.title || `${cities.join(" → ")} Trip`;
