@@ -77,6 +77,16 @@ graph TB
     SB_EDGE -->|"Pattern B: 3 functions"| LOVABLE
     GEMINI -.->|"Real-time data"| SEARCH
     SB_EDGE -->|"Read/Write"| SB_DB
+
+    classDef frontend fill:#3B82F6,stroke:#1D4ED8,color:#FFFFFF,stroke-width:2px
+    classDef backend fill:#10B981,stroke:#047857,color:#FFFFFF,stroke-width:2px
+    classDef ai fill:#8B5CF6,stroke:#6D28D9,color:#FFFFFF,stroke-width:2px
+    classDef database fill:#F59E0B,stroke:#B45309,color:#FFFFFF,stroke-width:2px
+
+    class UI,RQ,AUTH_CTX,ROUTER frontend
+    class SB_AUTH,SB_EDGE backend
+    class SB_DB database
+    class GEMINI,LOVABLE,SEARCH ai
 ```
 
 ### Frontend Stack
@@ -171,11 +181,11 @@ On completion, the wizard saves the profile to `user_profiles` and calls the `an
 
 ```mermaid
 flowchart TD
-    START["App Entry"] --> CHECK{"User\nauthenticated?"}
+    START(["App Entry"]) --> CHECK{"User\nauthenticated?"}
     CHECK -->|"No"| AUTH["Auth Page\nEmail / Google OAuth"]
     AUTH --> CHECK
     CHECK -->|"Yes"| OB_CHECK{"Onboarding\ncompleted?"}
-    OB_CHECK -->|"Yes"| DASH["Dashboard"]
+    OB_CHECK -->|"Yes"| DASH(["Dashboard"])
     OB_CHECK -->|"No"| S1
 
     subgraph WIZARD["Onboarding Wizard"]
@@ -193,6 +203,22 @@ flowchart TD
     ANALYZE --> GEMINI["Gemini 2.5 Flash\nGenerate experience level"]
     GEMINI --> UPDATE["Update profile\nexperience_level"]
     UPDATE --> DASH
+
+    classDef start fill:#64748B,stroke:#334155,color:#FFFFFF,stroke-width:2px
+    classDef decision fill:#F97316,stroke:#C2410C,color:#FFFFFF,stroke-width:2px
+    classDef auth fill:#EF4444,stroke:#B91C1C,color:#FFFFFF,stroke-width:2px
+    classDef step fill:#3B82F6,stroke:#1D4ED8,color:#FFFFFF,stroke-width:2px
+    classDef action fill:#10B981,stroke:#047857,color:#FFFFFF,stroke-width:2px
+    classDef ai fill:#8B5CF6,stroke:#6D28D9,color:#FFFFFF,stroke-width:2px
+    classDef success fill:#14B8A6,stroke:#0D9488,color:#FFFFFF,stroke-width:2px
+
+    class START start
+    class CHECK,OB_CHECK decision
+    class AUTH auth
+    class S1,S2,S3,S4,S5,S6 step
+    class SAVE,ANALYZE action
+    class GEMINI ai
+    class UPDATE,DASH success
 ```
 
 ### Custom Hooks
@@ -221,6 +247,7 @@ PostgreSQL via Supabase, with Row-Level Security (RLS) policies ensuring users c
 ### Entity-Relationship Diagram
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#3B82F6', 'primaryTextColor': '#FFFFFF', 'primaryBorderColor': '#1D4ED8', 'lineColor': '#94A3B8', 'secondaryColor': '#1E293B', 'tertiaryColor': '#334155', 'background': 'transparent'}}}%%
 erDiagram
     USER_PROFILES {
         uuid id PK
@@ -406,6 +433,16 @@ flowchart LR
 
     KEY_A --> M1 & M2
     KEY_B --> M2 & M3 & M4
+
+    classDef func fill:#3B82F6,stroke:#1D4ED8,color:#FFFFFF,stroke-width:2px
+    classDef keyA fill:#10B981,stroke:#047857,color:#FFFFFF,stroke-width:2px
+    classDef keyB fill:#F97316,stroke:#C2410C,color:#FFFFFF,stroke-width:2px
+    classDef model fill:#8B5CF6,stroke:#6D28D9,color:#FFFFFF,stroke-width:2px
+
+    class F1,F2,F3,F4,F5,F6,F7,F8,F9 func
+    class KEY_A keyA
+    class KEY_B keyB
+    class M1,M2,M3,M4 model
 ```
 
 ### API Pattern A: Direct Gemini REST
@@ -469,8 +506,8 @@ All AI responses go through a shared extraction pipeline in `_shared/extract-jso
 
 ```mermaid
 flowchart TD
-    A["Raw Gemini Response\ncandidates[0].content"] --> B{"Direct\nJSON.parse"}
-    B -->|"Success"| Z["Valid JSON Object"]
+    A(["Raw Gemini Response\ncandidates[0].content"]) --> B{"Direct\nJSON.parse"}
+    B -->|"Success"| Z(["Valid JSON Object"])
     B -->|"Fail"| C{"Strip markdown\nfences"}
     C --> D{"JSON.parse\nagain"}
     D -->|"Success"| Z
@@ -480,7 +517,17 @@ flowchart TD
     F -->|"Fail"| G{"Repair truncated\nJSON"}
     G -->|"Close brackets\n+ braces"| H{"JSON.parse\nrepaired"}
     H -->|"Success"| Z
-    H -->|"Fail"| X["Error: Parse Failed"]
+    H -->|"Fail"| X(["Error: Parse Failed"])
+
+    classDef input fill:#3B82F6,stroke:#1D4ED8,color:#FFFFFF,stroke-width:2px
+    classDef decision fill:#F97316,stroke:#C2410C,color:#FFFFFF,stroke-width:2px
+    classDef success fill:#10B981,stroke:#047857,color:#FFFFFF,stroke-width:2px
+    classDef error fill:#EF4444,stroke:#B91C1C,color:#FFFFFF,stroke-width:2px
+
+    class A input
+    class B,C,D,E,F,G,H decision
+    class Z success
+    class X error
 ```
 
 ### Purpose Engine System Prompt
@@ -519,6 +566,7 @@ All edge functions follow a common pattern: CORS headers for `OPTIONS` preflight
 ### Auth Flow
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'actorBkg': '#3B82F6', 'actorBorder': '#1D4ED8', 'actorTextColor': '#FFFFFF', 'signalColor': '#94A3B8', 'signalTextColor': '#94A3B8', 'noteBkgColor': '#8B5CF6', 'noteTextColor': '#FFFFFF', 'noteBorderColor': '#6D28D9', 'activationBkgColor': '#10B981', 'activationBorderColor': '#047857', 'labelBoxBkgColor': '#1E293B', 'labelBoxBorderColor': '#475569', 'labelTextColor': '#E2E8F0', 'loopTextColor': '#E2E8F0', 'background': 'transparent'}}}%%
 sequenceDiagram
     participant U as User
     participant SPA as React SPA
@@ -564,14 +612,14 @@ sequenceDiagram
 
 ```mermaid
 flowchart TB
-    DISC["Discover Page\n3 Tabs"] --> TAB1 & TAB2 & TAB3
+    DISC(["Discover Page\n3 Tabs"]) --> TAB1 & TAB2 & TAB3
 
     subgraph MOOD["Mood Match"]
         TAB1["Mood Check-In\n4 sliders"]
         TAB1 --> M_INPUT["mood + energy +\nplanning_horizon + trip_mode"]
         M_INPUT --> M_FUNC["discover-destinations\ngemini-2.5-flash-lite"]
         M_FUNC --> M_SAVE["Upsert mood_sessions"]
-        M_SAVE --> M_CARDS["Destination Cards\nImage carousel + details"]
+        M_SAVE --> M_CARDS(["Destination Cards\nImage carousel + details"])
     end
 
     subgraph VIBE["Vibe Match"]
@@ -580,7 +628,7 @@ flowchart TB
         V_STEP1 --> V_FEATURES["landscape, crowd,\npace, light, activity"]
         V_FEATURES --> V_STEP2["Step 2: Matching\ngemini-2.5-flash"]
         V_STEP2 --> V_SAVE["Save vibe_searches"]
-        V_SAVE --> V_RESULTS["Matched Destinations"]
+        V_SAVE --> V_RESULTS(["Matched Destinations"])
     end
 
     subgraph ASSIST["Trip Assist"]
@@ -589,8 +637,22 @@ flowchart TB
         A_REASONS --> A_SELECT["Select Reason Card"]
         A_SELECT --> A_QUESTION["Ask Question"]
         A_QUESTION --> A_ANSWER["trip-assist-recommend\ngemini-2.5-flash + Search"]
-        A_ANSWER --> A_DISPLAY["Rich Markdown Response"]
+        A_ANSWER --> A_DISPLAY(["Rich Markdown Response"])
     end
+
+    classDef entry fill:#64748B,stroke:#334155,color:#FFFFFF,stroke-width:2px
+    classDef mood fill:#14B8A6,stroke:#0D9488,color:#FFFFFF,stroke-width:2px
+    classDef vibe fill:#8B5CF6,stroke:#6D28D9,color:#FFFFFF,stroke-width:2px
+    classDef assist fill:#F97316,stroke:#C2410C,color:#FFFFFF,stroke-width:2px
+    classDef output fill:#10B981,stroke:#047857,color:#FFFFFF,stroke-width:2px
+
+    class DISC entry
+    class TAB1,M_INPUT,M_FUNC,M_SAVE mood
+    class M_CARDS output
+    class TAB2,V_STEP1,V_FEATURES,V_STEP2,V_SAVE vibe
+    class V_RESULTS output
+    class TAB3,A_REASONS,A_SELECT,A_QUESTION,A_ANSWER assist
+    class A_DISPLAY output
 ```
 
 Results cached in `mood_sessions` with a TTL (`expires_at`). Returning users see their last session until it expires.
@@ -598,6 +660,7 @@ Results cached in `mood_sessions` with a TTL (`expires_at`). Returning users see
 ### Itinerary Generation Flow
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#3B82F6', 'primaryTextColor': '#FFFFFF', 'primaryBorderColor': '#1D4ED8', 'lineColor': '#94A3B8', 'compositeBackground': '#1E293B', 'compositeBorder': '#475569', 'compositeTitleBackground': '#334155', 'secondaryColor': '#10B981', 'tertiaryColor': '#8B5CF6', 'background': 'transparent', 'textColor': '#E2E8F0', 'transitionColor': '#94A3B8', 'transitionLabelColor': '#CBD5E1', 'stateLabelColor': '#E2E8F0'}}}%%
 stateDiagram-v2
     [*] --> Setup: User opens Itinerary page
 
@@ -641,9 +704,9 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    USER["User enters destination"] --> VALIDATE["Validate input\nMax 120 chars, sanitize"]
+    USER(["User enters destination"]) --> VALIDATE["Validate input\nMax 120 chars, sanitize"]
     VALIDATE --> AUTH_CHECK{"JWT\nvalid?"}
-    AUTH_CHECK -->|"No"| ERR401["401 Unauthorized"]
+    AUTH_CHECK -->|"No"| ERR401(["401 Unauthorized"])
     AUTH_CHECK -->|"Yes"| PROFILE["Fetch user_profiles\ntravel style, interests, dietary"]
 
     PROFILE --> BUILD["Build prompt:\nPURPOSE_ENGINE_PROMPT\n+ user profile context\n+ destination"]
@@ -653,7 +716,7 @@ flowchart TD
     GEMINI --> PARSE["Extract JSON\nMulti-stage pipeline"]
 
     PARSE --> FILTER{"Minimum 4\nreasons?"}
-    FILTER -->|"No"| ERR500["500 Insufficient results"]
+    FILTER -->|"No"| ERR500(["500 Insufficient results"])
     FILTER -->|"Yes"| VALIDATE_CAT["Filter to valid categories"]
 
     subgraph CATEGORIES["14 Travel Categories"]
@@ -674,8 +737,27 @@ flowchart TD
     CARDS --> SELECT["User selects reason"]
     SELECT --> QUESTION["User asks follow-up"]
     QUESTION --> RECOMMEND["trip-assist-recommend\ngemini-2.5-flash + Search"]
-    RECOMMEND --> MARKDOWN["Rich Markdown Response\nRendered with react-markdown"]
+    RECOMMEND --> MARKDOWN(["Rich Markdown Response\nRendered with react-markdown"])
     RECOMMEND --> SAVE["Save to trip_assist_queries"]
+
+    classDef user fill:#3B82F6,stroke:#1D4ED8,color:#FFFFFF,stroke-width:2px
+    classDef validate fill:#64748B,stroke:#334155,color:#FFFFFF,stroke-width:2px
+    classDef decision fill:#F97316,stroke:#C2410C,color:#FFFFFF,stroke-width:2px
+    classDef error fill:#EF4444,stroke:#B91C1C,color:#FFFFFF,stroke-width:2px
+    classDef ai fill:#8B5CF6,stroke:#6D28D9,color:#FFFFFF,stroke-width:2px
+    classDef category fill:#14B8A6,stroke:#0D9488,color:#FFFFFF,stroke-width:2px
+    classDef action fill:#10B981,stroke:#047857,color:#FFFFFF,stroke-width:2px
+    classDef output fill:#06B6D4,stroke:#0891B2,color:#FFFFFF,stroke-width:2px
+
+    class USER user
+    class VALIDATE,VALIDATE_CAT validate
+    class AUTH_CHECK,FILTER decision
+    class ERR401,ERR500 error
+    class PROFILE,BUILD,PARSE action
+    class GEMINI,RECOMMEND ai
+    class C1,C2,C3,C4,C5,C6,C7,C8 category
+    class CARDS,SELECT,QUESTION action
+    class MARKDOWN,SAVE output
 ```
 
 ---
