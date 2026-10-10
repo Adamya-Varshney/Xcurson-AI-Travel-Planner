@@ -526,23 +526,18 @@ sequenceDiagram
     participant EF as Edge Functions
     participant DB as PostgreSQL
 
-    rect rgb(240, 240, 245)
     Note over U,DB: Email/Password Path
     U->>SPA: Enter credentials
     SPA->>SA: signUp / signInWithPassword
     SA-->>SPA: Session + JWT
-    end
 
-    rect rgb(240, 240, 245)
     Note over U,DB: Google OAuth Path
     U->>SPA: Click "Sign in with Google"
     SPA->>SA: signInWithOAuth("google")
     SA-->>U: Redirect to Google
     U-->>SA: Authorize
     SA-->>SPA: Session + JWT
-    end
 
-    rect rgb(240, 240, 245)
     Note over U,DB: Authenticated Requests
     SPA->>SPA: Store JWT in localStorage
     SPA->>EF: POST /functions/v1/* + Bearer JWT
@@ -551,7 +546,6 @@ sequenceDiagram
     EF->>DB: Query with user_id (RLS enforced)
     DB-->>EF: Scoped results
     EF-->>SPA: JSON response
-    end
 ```
 
 ### Security Model
